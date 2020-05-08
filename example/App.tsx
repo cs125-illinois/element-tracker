@@ -9,18 +9,51 @@ import components from "./components"
 
 const App: React.FC = () => (
   // @ts-ignore
-  <ElementTracker server={'ws://localhost:8888/'} googleToken={'idToken'} components={["h2", "h3"]}>
-    <h1>H1</h1>
-    <h2>h2</h2>
-    <h2>h2</h2>
-    <h2>h2</h2>
-    <h2>h2</h2>
-    <p>fhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv afhaiufgadpb yfdasgfugdsaiyfgiadsg fidaghsfi vhdsaiufgviuda givfaisfgv idasghfviadhsicvadsuyfgv duyasgfv a</p>
-    <h3>hey</h3>
-    <h3>hey</h3>
-    <h3>hey</h3>
-    <h3>hey</h3>
-    <h3>hey</h3>
+  <ElementTracker server={'ws://localhost:8888/'} googleToken={'idToken'} components={["h1", "h2", "h3", "h4"]}>
+    <h1>My Header 1</h1>
+    <br />
+    <br />
+    <br />
+    <h2>My Header 2</h2>
+    <br />
+    <br />
+    <br />
+    <h2>My Header 2</h2>
+    <br />
+    <br />
+    <br />
+    <h3>My Header 3</h3>
+    <br />
+    <br />
+    <br />
+    <h4>My Header 4</h4>
+    <br />
+    <br />
+    <br />
+    <h3>My Header 3</h3>
+    <br />
+    <br />
+    <br />
+    <h4>My Header 4</h4>
+    <br />
+    <br />
+    <br />
+    <h4>My Header 4</h4>
+    <br />
+    <br />
+    <br />
+    <h2>My Header 2</h2>
+    <br />
+    <br />
+    <br />
+    <h1>My Header 1</h1>
+    <br />
+    <br />
+    <br />
+    <h2>My Header 2</h2>
+    <br />
+    <br />
+    <br />
   </ElementTracker>
 )
 export default hot(module)(App)

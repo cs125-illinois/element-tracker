@@ -1,4 +1,17 @@
-import { Record, Partial, Number, Static, String, Array, Literal, Union } from "runtypes"
+import { Record, Partial, Number, Static, String, Array, Literal, Union, Boolean, Lazy } from "runtypes"
+
+export const Component: Record<any, false> = Lazy(() => Record({
+  tagName: String,
+  visible: Boolean,
+  id: String,
+  children: Array(Component)
+}))
+export type Component = {
+  tagName: string,
+  visible: boolean,
+  id: string,
+  children: Component[]
+}
 
 export const DeltaLocation = Record({
   row: Number,

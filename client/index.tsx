@@ -6,7 +6,7 @@ import { PingWS, filterPingPongMessages } from "@cs125/pingpongws"
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
 
-import { Delta, SaveMessage, ConnectionQuery, UpdateMessage, GetMessage } from "../types"
+import { Delta, SaveMessage, ConnectionQuery, UpdateMessage, GetMessage, Component } from "../types"
 
 interface IProps {
   server: string
@@ -27,24 +27,43 @@ const ElementTrackerContext = createContext<ElementTrackerContext>({
 })
 
 const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
-  const [activeSectionId, setActiveSectionId] = useState(undefined)
   const [connected, setConnected] = useState(false)
   const connection: React.MutableRefObject<ReconnectingWebSocket | undefined> = useRef(undefined)
   const browserId: React.MutableRefObject<string | undefined> = useRef(undefined)
 
-  const calculateActiveSection = useCallback(() => {
-    const componentNodes: Element[] = Array.from(document.querySelectorAll(components.join(', ')))
-    console.log(componentNodes)
+  const calculateActiveSection = () => {
+    const componentsFlattened: Component[] = (Array.from(document.querySelectorAll(components.join(', '))))
+      .map((componentNode) => {
+        const { height } = document.body.getBoundingClientRect();
+        const { tagName, id } = componentNode;
+        const { top, bottom } = componentNode.getBoundingClientRect()
+        const visible = top >= -10 && bottom <= height + 10
 
-    // What if no component is at top
-    componentNodes.reduce((accumulator: Element | undefined, currentValue: Element) => {
-      // currentValue.getBoundingClientRect().y <
-      if (accumulator)
-        return currentValue;
-      else
-        return accumulator
-    }, undefined)
+        return { tagName, id, visible, children: [] }
+      })
 
+    // Creates the tree
+    const structuredComponents: Component[] = []
+    let componentLogger: string[] = []
+
+    componentsFlattened.forEach(component => {
+      if (structuredComponents.length == 0) {
+        structuredComponents.push(component)
+      } else {
+        let level = componentLogger.indexOf(component.tagName)
+        if (level == -1) {
+          level = componentLogger.length
+        } else {
+          componentLogger = componentLogger.slice(0, level)
+        }
+        const getChildrenArray = (arr: Component[], depth: number): Component[] => {
+          if (depth == 0) return arr
+          else return getChildrenArray(arr[arr.length - 1].children, depth - 1)
+        }
+        getChildrenArray(structuredComponents, level).push(component)
+      }
+      componentLogger.push(component.tagName)
+    })
 
     // if (section && section.getBoundingClientRect()?.y < 10) {
     //   if (activeSectionId != i) {
@@ -56,7 +75,7 @@ const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
     // if (activeSectionId != -1) {
     //   setActiveSectionId(-1)
     // }
-  }, [activeSectionId, setActiveSectionId])
+  }
 
   useEffect(() => {
     window.addEventListener("scroll", calculateActiveSection)
