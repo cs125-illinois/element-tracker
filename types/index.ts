@@ -15,7 +15,7 @@ export type Component = {
 
 export const UpdateMessage = Record({
   type: Literal("update"),
-  editorId: String,
+  browserId: String,
   // updateId: String,
   data: Array(Component),
 })

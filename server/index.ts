@@ -26,7 +26,7 @@ const router = new Router<{}, { ws: () => Promise<WebSocket> }>()
 const { database } = mongodbUri.parse(process.env.MONGODB as string)
 // console.log(process.env)
 const client = mongo.connect(process.env.MONGODB as string, { useNewUrlParser: true, useUnifiedTopology: true })
-const maceCollection = client.then((c) => c.db(database).collection(process.env.MONGODB_COLLECTION || "mace"))
+const elementTrackerCollection = client.then((c) => c.db(database).collection(process.env.MONGODB_COLLECTION || "elementTracker"))
 
 // const serverStatus: ServerStatus = ServerStatus.check({
 //     started: new Date().toISOString(),
@@ -56,20 +56,15 @@ function websocketIdFromClientId(clientId: ClientId): string {
   return `${clientId.origin}/${clientId.email || clientId.browserId}`
 }
 
-async function doUpdate(clientId: ClientId, saveMessage: SaveMessage): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { type, deltas, ...savedContent } = saveMessage
+async function doUpdate(clientId: ClientId, updateMessage: UpdateMessage): Promise<void> {
 
-  const update = UpdateMessage.check({
-    type: "update",
-    ...savedContent,
+  const { data } = updateMessage
+
+  await (await elementTrackerCollection).insertOne({
+    timestamp: new Date(),
+    ...clientId,
+    data
   })
-  const websocketId = websocketIdFromClientId(clientId)
-  await Promise.all(
-    _.forEach(websocketsForClient[websocketId], (ws) => {
-      ws.send(JSON.stringify(update))
-    })
-  )
 }
 
 // async function doSave(clientId: ClientId, saveMessage: SaveMessage): Promise<void> {
@@ -84,25 +79,8 @@ async function doUpdate(clientId: ClientId, saveMessage: SaveMessage): Promise<v
 //   await doUpdate(clientId, saveMessage)
 // }
 
-// async function doGet(clientId: ClientId, getMessage: GetMessage): Promise<void> {
-//   try {
-//     const { editorId } = getMessage
-//     const { browserId, origin, email } = clientId
-//     const query: { editorId: string; origin: string; email?: string; browserId?: string } = { editorId, origin }
-//     if (email) {
-//       query.email = email
-//     } else {
-//       query.browserId = browserId
-//     }
-//     const savedContent = (await (await maceCollection).find(query).sort({ timestamp: -1 }).limit(1).toArray())[0].saved
-//     const saveMessage = SaveMessage.check({ type: "save", ...savedContent })
-//     await doUpdate(clientId, saveMessage)
-//   } catch (err) { }
-// }
-
 function terminate(clientId: string, ws: WebSocket): void {
   try {
-
     ws.terminate()
   } catch (err) { }
   _.remove(websocketsForClient[clientId], ws)
@@ -150,19 +128,18 @@ router.get("/", async (ctx) => {
     "message",
     filterPingPongMessages(async ({ data }) => {
       const message = JSON.parse(data.toString())
-      console.log(message)
-      // if (SaveMessage.guard(message)) {
-      //   // if (message.value.length > maxEditorSize) {
-      //   //   return ctx.throw(400, "Content too large")
-      //   // }
-      //   await doSave(clientId, message)
-      //   serverStatus.counts.save++
-      // } else if (GetMessage.guard(message)) {
-      //   serverStatus.counts.get++
-      //   await doGet(clientId, message)
-      // } else {
-      //   console.error(`Bad message: ${JSON.stringify(message, null, 2)}`)
-      // }
+      if (UpdateMessage.guard(message)) {
+        // if (message.value.length > maxEditorSize) {
+        //   return ctx.throw(400, "Content too large")
+        // }
+        await doUpdate(clientId, message)
+        // serverStatus.counts.save++
+        // } else if (GetMessage.guard(message)) {
+        //   serverStatus.counts.get++
+        //   await doGet(clientId, message)
+        // } else {
+        console.error(`Bad message: ${JSON.stringify(message, null, 2)}`)
+      }
     })
   )
   ws.addEventListener("close", () => {
@@ -170,7 +147,7 @@ router.get("/", async (ctx) => {
   })
 })
 
-maceCollection.then(async (c) => {
+elementTrackerCollection.then(async (c) => {
   console.log(JSON.stringify(serverStatus, null, 2))
 
   await c.createIndex({ clientId: 1, editorId: 1, timestamp: 1 })

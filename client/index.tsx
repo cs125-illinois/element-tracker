@@ -6,7 +6,7 @@ import { PingWS, filterPingPongMessages } from "@cs125/pingpongws"
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
 
-import { Delta, SaveMessage, ConnectionQuery, UpdateMessage, GetMessage, Component } from "../types"
+import { ConnectionQuery, UpdateMessage, Component } from "../types"
 
 interface IProps {
   server: string
@@ -60,6 +60,8 @@ const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
       }
       componentLogger.push(component.tagName)
     })
+
+    update({ data: structuredComponents })
   }, [])
 
   useEffect(() => {
