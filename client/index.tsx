@@ -16,22 +16,18 @@ interface IProps {
 
 interface ElementTrackerContext {
   connected: boolean
-  save: (message: any) => void
-  register: () => void
 }
 
 const ElementTrackerContext = createContext<ElementTrackerContext>({
-  connected: false,
-  register: () => { },
-  save: () => { }
+  connected: false
 })
 
 const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
   const [connected, setConnected] = useState(false)
   const connection: React.MutableRefObject<ReconnectingWebSocket | undefined> = useRef(undefined)
-  const browserId: React.MutableRefObject<string | undefined> = useRef(undefined)
+  const browserId = useRef(localStorage.getItem("browserId") || uuidv4())
 
-  const calculateActiveSection = () => {
+  const calculateActiveSection = useCallback(() => {
     const componentsFlattened: Component[] = (Array.from(document.querySelectorAll(components.join(', '))))
       .map((componentNode) => {
         const { height } = document.body.getBoundingClientRect();
@@ -64,18 +60,7 @@ const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
       }
       componentLogger.push(component.tagName)
     })
-
-    // if (section && section.getBoundingClientRect()?.y < 10) {
-    //   if (activeSectionId != i) {
-    //     setActiveSectionId(i)
-    //   }
-    //   return
-    // }
-
-    // if (activeSectionId != -1) {
-    //   setActiveSectionId(-1)
-    // }
-  }
+  }, [])
 
   useEffect(() => {
     window.addEventListener("scroll", calculateActiveSection)
@@ -85,77 +70,44 @@ const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
     }
   }, [calculateActiveSection])
 
-  // Sets the browser id
-  useEffect(() => {
-    browserId.current = localStorage.getItem("browserId") || uuidv4()
-    localStorage.setItem("browserId", browserId.current)
-  }, [browserId])
-
-  // Connect function
   const connect = useCallback(() => {
-    if (connection.current) {
-      connection.current.close()
-    }
-    // TODO: Dont connect if there isnt a server passed into it
-    // if (!this.props.server) {
-    //   return
-    // }
-    // TODO: Check if it's valid :(
-    const connectionQuery = {
-      browserId: browserId,
+    connection.current?.close()
+
+    if (!server) return
+
+    const connectionQuery: ConnectionQuery = ConnectionQuery.check({
+      browserId: browserId.current
       // googleToken: this.props.googleToken,
-    };
+    });
 
     connection.current = PingWS(
-      // Fix url
       new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`)
     )
 
     connection.current.addEventListener("open", () => {
       setConnected(true)
-      //   TODO: on connect logic
-      //   Object.keys(this.editorUpdaters).forEach((editorId) => {
-      //     const message = GetMessage.check({ type: "get", editorId })
-      //     this.connection?.send(JSON.stringify(message))
-      //   })
     })
 
     connection.current.addEventListener("close", () => {
       setConnected(false)
     })
+  }, [browserId, connection, setConnected])
 
-    // TODO: Might not actually need this
-    // connection.current.addEventListener(
-    //   "message",
-    //   filterPingPongMessages(({ data }) => {
-    //     const message = JSON.parse(data)
-    //     if (UpdateMessage.guard(message)) {
-    //       this.update(message)
-    //     }
-    //   })
-    // )
-  }, [connection, setConnected])
-
-  // TODO: Set up types for message
-  const save = useCallback((message: any) => {
+  const update = useCallback(({ data }: { data: Component[] }) => {
     if (server) {
-      // TODO: Validate message
-      const update = UpdateMessage.check({
+      // TODO: Implement save id
+      const update: UpdateMessage = UpdateMessage.check({
         type: "update",
-        browserId: message.editorId,
-        saveId: message.saveId,
-        value: message.value,
-        cursor: message.cursor,
+        browserId: browserId.current,
+        // updateId: message.saveId,
+        data
       })
-      // this.update(update)
+      connection.current?.send(JSON.stringify(update))
       return
     }
     if (!connection.current || !connected) {
       throw new Error("server not connected")
     }
-    // Validate the message somehow
-    // SaveMessage.check(message)
-    connection.current?.send(JSON.stringify(message))
   }, [connection, connected])
 
   // Connects to server on mount and reconnects each time the google user changes
@@ -171,7 +123,7 @@ const ElementTracker: React.FC<IProps> = ({ server, components, children }) => {
     }
   }, [])
 
-  return <ElementTrackerContext.Provider value={{ connected, save, register: () => { } }} >{children}</ElementTrackerContext.Provider>
+  return <ElementTrackerContext.Provider value={{ connected }} >{children}</ElementTrackerContext.Provider>
 }
 
 export { ElementTracker, ElementTrackerContext }

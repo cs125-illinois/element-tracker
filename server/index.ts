@@ -14,7 +14,7 @@ import { OAuth2Client } from "google-auth-library"
 import WebSocket from "ws"
 import { PongWS, filterPingPongMessages } from "@cs125/pingpongws"
 
-import { SaveMessage, ConnectionQuery, UpdateMessage, GetMessage, ServerStatus, ClientId, Component } from "../types"
+import { ConnectionQuery, UpdateMessage, ClientId, } from "../types"
 
 import { Array, String } from "runtypes"
 
