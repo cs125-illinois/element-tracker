@@ -1,21 +1,21 @@
 {
-  "name": "@cs125/mace",
-  "description": "Client and server support for saving and synchonizing Ace editor contents.",
+  "name": "@cs125/element-tracker",
+  "description": "Client and server support for tracking page component visibility.",
   "license": "MIT",
   "author": "Geoffrey Challen <geoffrey.challen@gmail.com>",
-  "homepage": "https://github.com/cs125-illinois/mace",
-  "repository": "https://github.com/cs125-illinois/mace",
-  "bugs": "https://github.com/cs125-illinois/mace/issues",
-  "version": "2020.5.3",
+  "homepage": "https://github.com/cs125-illinois/element-tracker",
+  "repository": "https://github.com/cs125-illinois/element-tracker",
+  "bugs": "https://github.com/cs125-illinois/element-tracker/issues",
+  "version": "2020.5.0",
   "main": "client/dist/index.cjs.js",
   "files": [
     "client/dist/**/*"
   ],
   "scripts": {
-    "backend": "docker-compose -p react-mace up > /dev/null",
+    "backend": "docker-compose -p element-tracker up > /dev/null",
     "build": "npm run build:client && npm run docker:build && npm run build:docs",
     "build:client": "rm -rf client/dist && GIT_COMMIT=$(git show --no-patch --format=%h) rollup -c && cp index.d.ts client/dist/ && rm -rf client/dist/example",
-    "build:docs": "rm -rf docs && parcel build example/index.html --out-dir docs --public-url=\"/mace\"",
+    "build:docs": "rm -rf docs && parcel build example/index.html --out-dir docs --public-url=\"/element-tracker\"",
     "build:server": "rm -rf server/dist && GIT_COMMIT=$(git show --no-patch --format=%h) webpack",
     "check": "npm run eslint && npm run tsc && npm run prettier && npm run depcheck",
     "client": "GIT_COMMIT=$(git show --no-patch --format=%h) rollup -c -w",
@@ -46,12 +46,12 @@
     "koa-bodyparser": "^4.3.0",
     "koa-easy-ws": "https://github.com/cs125-illinois/koa-easy-ws.git",
     "koa-router": "^8.0.8",
-    "lodash": "^4.17.15",
     "mongodb": "^3.5.7",
     "mongodb-uri": "^0.9.7",
     "query-string": "^6.12.1",
     "reconnecting-websocket": "^4.4.0",
     "runtypes": "^4.2.0",
+    "throttle-debounce": "^2.1.0",
     "uuid": "^8.0.0",
     "ws": "^7.2.5"
   },
@@ -74,12 +74,13 @@
     "@types/node": "13.13.4",
     "@types/react": "^16.9.34",
     "@types/react-dom": "^16.9.7",
+    "@types/react-syntax-highlighter": "^11.0.4",
+    "@types/throttle-debounce": "^2.1.0",
     "@types/url-join": "^4.0.0",
     "@types/webpack-env": "^1.15.2",
     "@types/ws": "^7.2.4",
     "@typescript-eslint/eslint-plugin": "^2.30.0",
     "@typescript-eslint/parser": "^2.30.0",
-    "ace-builds": "^1.4.11",
     "babel-eslint": "^10.1.0",
     "babel-polyfill": "^6.26.0",
     "concurrently": "^5.2.0",
@@ -103,6 +104,7 @@
     "react-children-utilities": "^2.1.0",
     "react-dom": "^16.13.1",
     "react-hot-loader": "^4.12.21",
+    "react-lorem-ipsum": "^1.4.4",
     "react-syntax-highlighter": "^12.2.1",
     "rollup": "^2.7.6",
     "rollup-plugin-commonjs": "^10.1.0",
@@ -110,6 +112,7 @@
     "rollup-plugin-typescript2": "^0.27.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^0.88.2",
+    "slugify": "^1.4.0",
     "ts-loader": "^7.0.2",
     "ts-node": "^8.10.1",
     "tsconfig-paths": "^3.9.0",
@@ -118,7 +121,7 @@
     "webpack-cli": "^3.3.11"
   },
   "alias": {
-    "@cs125/mace": ".",
+    "@cs125/element-tracker": ".",
     "react-dom": "@hot-loader/react-dom"
   },
   "husky": {
@@ -126,7 +129,7 @@
       "pre-commit": "lint-staged"
     }
   },
-  "image": "cs125/mace",
+  "image": "cs125/element-tracker",
   "lint-staged": {
     "*.{json,js,ts,md}": [
       "prettier --write"

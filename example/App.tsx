@@ -1,59 +1,52 @@
-import React from "react"
+import React, { useRef } from "react"
 import { hot } from "react-hot-loader"
 
 import { GoogleLoginProvider, WithGoogleTokens } from "@cs125/react-google-login"
 
-import { ElementTracker, ElementTrackerContext } from "../client/"
+import { Container, Ref, Responsive, Segment, Rail, Sticky } from "semantic-ui-react"
 
-import components from "./components"
+import { MDXProvider } from "@mdx-js/react"
+import Content from "./index.mdx"
 
-const App: React.FC = () => (
-  // @ts-ignore
-  <ElementTracker server={'ws://localhost:8888/'} googleToken={'idToken'} components={["h1", "h2", "h3", "h4"]}>
-    <h1>My Header 1</h1>
-    <br />
-    <br />
-    <br />
-    <h2>My Header 2</h2>
-    <br />
-    <br />
-    <br />
-    <h2>My Header 2</h2>
-    <br />
-    <br />
-    <br />
-    <h3>My Header 3</h3>
-    <br />
-    <br />
-    <br />
-    <h4>My Header 4</h4>
-    <br />
-    <br />
-    <br />
-    <h3>My Header 3</h3>
-    <br />
-    <br />
-    <br />
-    <h4>My Header 4</h4>
-    <br />
-    <br />
-    <br />
-    <h4>My Header 4</h4>
-    <br />
-    <br />
-    <br />
-    <h2>My Header 2</h2>
-    <br />
-    <br />
-    <br />
-    <h1>My Header 1</h1>
-    <br />
-    <br />
-    <br />
-    <h2>My Header 2</h2>
-    <br />
-    <br />
-    <br />
-  </ElementTracker>
-)
+import { components, SidebarMenu } from "./components"
+
+import { ElementTracker } from "@cs125/element-tracker"
+
+const App: React.FC = () => {
+  const contextRef = useRef()
+
+  return (
+    <GoogleLoginProvider
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      clientConfig={{ client_id: process.env.GOOGLE_CLIENT_IDS as string }}
+    >
+      <WithGoogleTokens>
+        {({ idToken }): JSX.Element => {
+          return (
+            <ElementTracker server={"ws://localhost:8888/"} tags={["h1", "h2", "h3", "h4"]} googleToken={idToken}>
+              <Container text>
+                <Ref innerRef={contextRef}>
+                  <Segment basic>
+                    <Responsive minWidth={1200}>
+                      <Rail position="right">
+                        <Sticky context={contextRef}>
+                          <Segment basic style={{ paddingTop: 64 }}>
+                            <SidebarMenu />
+                          </Segment>
+                        </Sticky>
+                      </Rail>
+                    </Responsive>
+                    <MDXProvider components={components}>
+                      <Content />
+                    </MDXProvider>
+                  </Segment>
+                </Ref>
+              </Container>
+            </ElementTracker>
+          )
+        }}
+      </WithGoogleTokens>
+    </GoogleLoginProvider>
+  )
+}
 export default hot(module)(App)

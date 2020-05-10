@@ -1,28 +1,44 @@
-import { Record, Partial, Number, Static, String, Array, Literal, Union, Boolean, Lazy } from "runtypes"
+import {
+  Record,
+  Partial,
+  Static,
+  String,
+  Array,
+  Literal,
+  Boolean,
+  Lazy,
+  Runtype,
+  Union,
+  InstanceOf,
+  Number,
+} from "runtypes"
 
-export const Component: Record<any, false> = Lazy(() => Record({
-  tagName: String,
+export const Component = Record({
+  tag: String,
   visible: Boolean,
-  id: String,
-  children: Array(Component)
-}))
-export type Component = {
-  tagName: string,
-  visible: boolean,
-  id: string,
-  children: Component[]
-}
+  top: Number,
+  bottom: Number,
+  height: Number,
+}).And(
+  Partial({
+    id: String,
+    text: String,
+  })
+)
+export type Component = Static<typeof Component>
 
-export const UpdateMessage = Record({
-  type: Literal("update"),
-  browserId: String,
-  // updateId: String,
-  data: Array(Component),
-})
-export type UpdateMessage = Static<typeof UpdateMessage>
+export const ComponentTree: Runtype<ComponentTree> = Lazy(() =>
+  Component.And(
+    Record({
+      children: Array(ComponentTree),
+    })
+  )
+)
+export type ComponentTree = Component & { children: ComponentTree[] }
 
 export const ConnectionQuery = Record({
   browserId: String,
+  tabId: String,
 }).And(
   Partial({
     googleToken: String,
@@ -30,25 +46,53 @@ export const ConnectionQuery = Record({
 )
 export type ConnectionQuery = Static<typeof ConnectionQuery>
 
-export const ClientId = Record({
-  browserId: String,
+export const ConnectionLocation = Record({
   origin: String,
-}).And(
+  browserId: String,
+  tabId: String,
+})
+export type ConnectionLocation = Static<typeof ConnectionLocation>
+
+export const ConnectionSave = Union(
+  ConnectionLocation,
+  Record({
+    type: Union(Literal("connected"), Literal("disconnected")),
+    timestamp: InstanceOf(Date),
+  })
+)
+export type ConnectionSave = Static<typeof ConnectionSave>
+
+export const UpdateMessage = Record({
+  type: Literal("update"),
+  location: String,
+  components: Array(Component),
+})
+export type UpdateMessage = Static<typeof UpdateMessage>
+
+export const UpdateSave = Union(
+  ConnectionLocation,
+  UpdateMessage,
+  Record({
+    timestamp: InstanceOf(Date),
+  }),
   Partial({
     email: String,
   })
 )
-export type ClientId = Static<typeof ClientId>
+export type UpdateSave = Static<typeof UpdateSave>
 
-export const ServerStatus = Record({
-  started: String.withConstraint((s) => Date.parse(s) !== NaN),
-  version: String,
-  commit: String,
-  counts: Record({
-    client: Number,
-    save: Number,
-    get: Number,
-  }),
-  googleClientIDs: Array(String),
+export const LoginMessage = Record({
+  type: Literal("login"),
+  googleToken: String,
 })
-export type ServerStatus = Static<typeof ServerStatus>
+export type LoginMessage = Static<typeof LoginMessage>
+
+export const LoginSave = Union(
+  ConnectionLocation,
+  Record({
+    type: Literal("login"),
+    timestamp: InstanceOf(Date),
+    email: String,
+  })
+)
+export type LoginSave = Static<typeof LoginSave>

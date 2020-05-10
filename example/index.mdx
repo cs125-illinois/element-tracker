@@ -1,0 +1,63 @@
+import LoginButton from "./LoginButton"
+import { UpdateHash, FakeContent } from "./components"
+
+<UpdateHash />
+
+# `@cs125/element-tracker`
+
+![npm](https://img.shields.io/npm/v/@cs125/element-tracker)
+![Docker Image Version (latest by date)](https://img.shields.io/docker/v/cs125/element-tracker?color=green&label=Docker&sort=date)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+<LoginButton />
+
+## Install
+
+```bash
+npm i @cs125/element-tracker # client
+docker pull cs125/element-tracker # server
+```
+
+## Use
+
+`@cs125/element-tracker` has both a client and a server component.
+
+### Client
+
+First, wrap your app in the `<ElementTracker />` component:
+
+```tsx
+const App: React.FC = () => {
+  return (
+    <ElementTracker tags=["h1", "h2"]>
+      <RestOfYourApp />
+    </ElementTracker>
+  )
+}
+```
+
+Then you can use the `ElementTracker` to retrieve a list of all the components matching the tags you provided and their
+positions on the page.
+
+```tsx
+import { useElementTracker } from "@cs125/element-tracker"
+
+const MyComponent: React.FC = ({}) => {
+  const { components } = useElementTracker()
+}
+```
+
+For examples see [`components.tsx`](https://github.com/cs125-illinois/element-tracker/blob/master/example/components.tsx) in the example
+subdirectory of the repository.
+Both the window hash updating and the sidebar navigation on this page are built using this component.
+
+### Server
+
+`@cs125/element-tracker` can report browsing activity to a remote server.
+To enable this set up the server using the Docker container and pass the websocket URL to your client.
+
+## Dummy Content
+
+Some dummy content follows to make the page long enough for the sidebar navigation to kick in.
+
+<FakeContent />

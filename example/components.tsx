@@ -1,158 +1,90 @@
-import React, { Component, createRef, ReactElement } from "react"
+import React from "react"
 import PropTypes from "prop-types"
 
-import { Container, Button } from "semantic-ui-react"
-
-import { MaceEditor, MaceProps, MaceContext } from "@cs125/mace"
-
 import Children from "react-children-utilities"
-import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/default-highlight"
+import slugify from "slugify"
 
-import "ace-builds/src-noconflict/theme-chrome"
-import ace from "ace-builds/src-noconflict/ace"
-const CDN = "https://cdn.jsdelivr.net/npm/ace-builds@1.4.11/src-min-noconflict"
-ace.config.set("basePath", CDN)
+import { LoremIpsum } from "react-lorem-ipsum"
+import { useElementTracker } from "@cs125/element-tracker"
+import { List } from "semantic-ui-react"
 
-class MacePlayground extends Component<MaceProps, { value: string; saved: boolean; saving: boolean }> {
-  static contextType = MaceContext
-  declare context: React.ContextType<typeof MaceContext>
+import PrismLight from "react-syntax-highlighter/dist/esm/prism-light"
+import style from "react-syntax-highlighter/dist/esm/styles/prism/tomorrow"
+import bash from "react-syntax-highlighter/dist/esm/languages/prism/bash"
+PrismLight.registerLanguage("bash", bash)
+import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx"
+PrismLight.registerLanguage("tsx", tsx)
 
-  private maceRef = createRef<MaceEditor>()
-  private originalValue: string
-  private savedValue: string
-  private saveTimer: NodeJS.Timeout | undefined
+export const UpdateHash: React.FC<{ component: string }> = () => {
+  const { components } = useElementTracker()
+  const firstVisible = components?.find((c) => c.visible)
+  if (firstVisible) {
+    history.replaceState(undefined, document.title, `#${firstVisible.id}`)
+  }
+  return null
+}
 
-  constructor(props: MaceProps, context: MaceContext) {
-    super(props, context)
-
-    this.originalValue = props.children || ""
-    this.savedValue = this.originalValue
-
-    this.state = { value: this.originalValue, saved: true, saving: false }
+export const SidebarMenu: React.FC = () => {
+  const { components } = useElementTracker()
+  if (!components) {
+    return null
+  }
+  const headers = components
+    .filter((c) => c.tag === "h2")
+    .map((c) => {
+      return { ...c, active: false }
+    })
+  if (headers.length === 0) {
+    return null
+  }
+  const onScreenHeaders = headers.filter((c) => c.top >= 0)
+  const offScreenHeaders = headers.filter((c) => c.top < 0)
+  if (onScreenHeaders.length > 0 && onScreenHeaders[0].visible) {
+    onScreenHeaders[0].active = true
+  } else if (offScreenHeaders.length > 0) {
+    offScreenHeaders[offScreenHeaders.length - 1].active = true
+  } else {
+    headers[0].active = true
   }
 
-  componentWillUnmount(): void {
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer)
-    }
+  return (
+    <List size="large">
+      {headers.map((header, i) => (
+        <List.Item key={i}>{header.active ? <strong>{header.text}</strong> : <span>{header.text}</span>}</List.Item>
+      ))}
+    </List>
+  )
+}
+interface HeadingProps {
+  id?: string
+  children: React.ReactNode
+}
+const Heading = (tag: string): React.FC<HeadingProps> => {
+  const WrappedHeading: React.FC<HeadingProps> = (props) => {
+    const { children } = props
+    const id = props.id || slugify(Children.onlyText(children), { lower: true })
+    return React.createElement(tag, { id }, children)
   }
-
-  save = (): void => {
-    if (this.state.saved) {
-      return
-    }
-    this.setState({ saving: true })
-    this.maceRef?.current?.save()
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer)
-    }
+  WrappedHeading.propTypes = {
+    id: PropTypes.string,
+    children: PropTypes.node.isRequired,
   }
-
-  reset = (): void => {
-    this.maceRef?.current?.setValue(this.originalValue)
-  }
-
-  render(): ReactElement {
-    const { saved, saving } = this.state
-    const { connected } = this.context
-
-    let saveButtonText = "Save"
-    if (saving) {
-      saveButtonText = "Saving"
-    } else if (saved) {
-      saveButtonText = "Saved"
-    }
-    const original = this.state.value === this.originalValue
-
-    const commands = (this.props.commands || []).concat([
-      {
-        name: "save",
-        bindKey: { win: "Ctrl-s", mac: "Ctrl-s" },
-        exec: this.save,
-      },
-      {
-        name: "gotoline",
-        exec: (): boolean => {
-          return false
-        },
-      },
-    ])
-    return (
-      <Container style={{ position: "relative" }}>
-        <MaceEditor
-          style={{ paddingBottom: "1rem" }}
-          ref={this.maceRef}
-          value={this.state.value}
-          onExternalUpdate={({ value }): void => {
-            this.savedValue = value
-            this.setState({ value, saved: value === this.savedValue })
-          }}
-          onSave={(value: string): void => {
-            this.savedValue = value
-            this.setState({ saving: false, saved: value === this.savedValue })
-          }}
-          onChange={(value: string): void => {
-            this.setState({ value, saved: value === this.savedValue })
-            if (this.saveTimer) {
-              clearTimeout(this.saveTimer)
-            }
-            this.saveTimer = setTimeout(() => {
-              this.save()
-            }, 1000)
-          }}
-          commands={commands}
-          {...this.props}
-        />
-        <Button floated="right" size="mini" disabled={original} onClick={this.reset}>
-          Reset
-        </Button>
-        <Button
-          floated="right"
-          size="mini"
-          positive={connected}
-          disabled={!connected || saved}
-          loading={saving}
-          onClick={this.save}
-        >
-          {saveButtonText}
-        </Button>
-      </Container>
-    )
-  }
+  return WrappedHeading
 }
 
 interface CodeBlockProps {
   className?: string
-  play?: boolean
-  id?: string
   children: React.ReactNode
 }
 const CodeBlock: React.FC<CodeBlockProps> = (props) => {
-  const { id, className, play, children, ...aceProps } = props
-
+  const { className, children } = props
   const language = className?.replace(/language-/, "") || ""
   const contents = Children.onlyText(children).trim()
-
-  if (play) {
-    return (
-      <MacePlayground
-        id={id as string}
-        theme="chrome"
-        mode={className?.replace(/language-/, "") || ""}
-        highlightActiveLine={false}
-        showPrintMargin={false}
-        width="100%"
-        height="100px"
-        maxLines={Infinity}
-        tabSize={2}
-        {...aceProps}
-      >
-        {contents}
-      </MacePlayground>
-    )
-  } else {
-    return <SyntaxHighlighter language={language}>{children}</SyntaxHighlighter>
-  }
+  return (
+    <PrismLight style={style} language={language} customStyle={{ fontSize: "0.9rem" }}>
+      {contents}
+    </PrismLight>
+  )
 }
 CodeBlock.propTypes = {
   className: PropTypes.string,
@@ -161,7 +93,36 @@ CodeBlock.propTypes = {
 CodeBlock.defaultProps = {
   className: "",
 }
-const components = {
+
+export const components = {
+  h1: Heading("h1"),
+  h2: Heading("h2"),
+  h3: Heading("h3"),
+  h4: Heading("h4"),
+  h5: Heading("h5"),
+  h6: Heading("h6"),
   code: CodeBlock,
 }
-export default components
+
+export class FakeContent extends React.PureComponent {
+  render(): React.ReactNode {
+    return (
+      <React.Fragment>
+        <components.h2>First</components.h2>
+        <LoremIpsum p={2} />
+        <components.h3>First First</components.h3>
+        <LoremIpsum p={1} />
+        <components.h3>First Second</components.h3>
+        <LoremIpsum p={3} />
+        <components.h4>First Second First</components.h4>
+        <LoremIpsum p={3} />
+        <components.h2>Second</components.h2>
+        <LoremIpsum p={4} />
+        <components.h3>Second First</components.h3>
+        <LoremIpsum p={1} />
+        <components.h4>Second First First</components.h4>
+        <LoremIpsum p={1} />
+      </React.Fragment>
+    )
+  }
+}

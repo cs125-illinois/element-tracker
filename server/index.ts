@@ -1,155 +1,106 @@
-import _ from "lodash"
-
 import Koa from "koa"
 import Router from "koa-router"
 import bodyParser from "koa-bodyparser"
 import cors from "@koa/cors"
 import websocket from "koa-easy-ws"
+import WebSocket from "ws"
+import { PongWS, filterPingPongMessages } from "@cs125/pingpongws"
 
 import { MongoClient as mongo } from "mongodb"
 import mongodbUri from "mongodb-uri"
 
 import { OAuth2Client } from "google-auth-library"
 
-import WebSocket from "ws"
-import { PongWS, filterPingPongMessages } from "@cs125/pingpongws"
+import {
+  ConnectionQuery,
+  ConnectionLocation,
+  ConnectionSave,
+  UpdateMessage,
+  UpdateSave,
+  LoginMessage,
+  LoginSave,
+} from "../types"
 
-import { ConnectionQuery, UpdateMessage, ClientId, } from "../types"
-
-import { Array, String } from "runtypes"
+import { String, Array } from "runtypes"
+const MONGODB = String.check(process.env.MONGODB)
+const MONGODB_COLLECTION = String.check(process.env.MONGODB_COLLECTION || "elementTracker")
 
 const app = new Koa()
 const router = new Router<{}, { ws: () => Promise<WebSocket> }>()
-// const googleClientIDs = process.env.GOOGLE_CLIENT_IDS && Array(String).check(process.env.GOOGLE_CLIENT_IDS?.split(",").map((s) => s.trim()))
-// const googleClient = googleClientIDs && googleClientIDs.length > 0 && new OAuth2Client(googleClientIDs[0])
 
-const { database } = mongodbUri.parse(process.env.MONGODB as string)
-// console.log(process.env)
-const client = mongo.connect(process.env.MONGODB as string, { useNewUrlParser: true, useUnifiedTopology: true })
-const elementTrackerCollection = client.then((c) => c.db(database).collection(process.env.MONGODB_COLLECTION || "elementTracker"))
+const googleClientIDs =
+  process.env.GOOGLE_CLIENT_IDS && Array(String).check(process.env.GOOGLE_CLIENT_IDS?.split(",").map((s) => s.trim()))
+const googleClient = googleClientIDs && googleClientIDs.length > 0 && new OAuth2Client()
 
-// const serverStatus: ServerStatus = ServerStatus.check({
-//     started: new Date().toISOString(),
-//     version: process.env.npm_package_version,
-//     commit: process.env.GIT_COMMIT,
-//     counts: {
-//         client: 0,
-//         save: 0,
-//         get: 0,
-//     },
-//       googleClientIDs,
-// })
-
-const serverStatus: any = {
-  started: new Date().toISOString(),
-  version: process.env.npm_package_version,
-  commit: process.env.GIT_COMMIT,
-  counts: {
-    client: 0,
-    save: 0,
-    get: 0,
-  }
-}
-const websocketsForClient: Record<string, WebSocket[]> = {}
-
-function websocketIdFromClientId(clientId: ClientId): string {
-  return `${clientId.origin}/${clientId.email || clientId.browserId}`
-}
-
-async function doUpdate(clientId: ClientId, updateMessage: UpdateMessage): Promise<void> {
-
-  const { data } = updateMessage
-
-  await (await elementTrackerCollection).insertOne({
-    timestamp: new Date(),
-    ...clientId,
-    data
-  })
-}
-
-// async function doSave(clientId: ClientId, saveMessage: SaveMessage): Promise<void> {
-//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-//   const { type, ...savedContent } = saveMessage
-
-//   await (await maceCollection).insertOne({
-//     timestamp: new Date(),
-//     ...clientId,
-//     saved: savedContent,
-//   })
-//   await doUpdate(clientId, saveMessage)
-// }
-
-function terminate(clientId: string, ws: WebSocket): void {
-  try {
-    ws.terminate()
-  } catch (err) { }
-  _.remove(websocketsForClient[clientId], ws)
-  if (websocketsForClient[clientId].length === 0) {
-    delete websocketsForClient[clientId]
-  }
-  serverStatus.counts.client = _.keys(websocketsForClient).length
-}
+const { database } = mongodbUri.parse(MONGODB)
+const client = mongo.connect(MONGODB, { useNewUrlParser: true, useUnifiedTopology: true })
+const elementTrackerCollection = client.then((c) => c.db(database).collection(MONGODB_COLLECTION))
 
 router.get("/", async (ctx) => {
   if (!ctx.ws) {
-    ctx.body = serverStatus
+    ctx.body = {}
     return
   }
 
   const connectionQuery = ConnectionQuery.check(ctx.request.query)
-  const { browserId } = connectionQuery
+  const { browserId, tabId } = connectionQuery
 
-  // const { googleToken: idToken } = connectionQuery
-  // let email
-  // if (idToken && googleClient) {
-  //   try {
-  //     email = (
-  //       await googleClient.verifyIdToken({
-  //         idToken,
-  //         audience: googleClientIDs || [],
-  //       })
-  //     ).getPayload()?.email
-  //   } catch (err) { }
-  // }
+  const connectionLocation = ConnectionLocation.check({
+    origin: ctx.headers.origin,
+    browserId,
+    tabId,
+  })
 
-  const clientId = ClientId.check({ browserId, origin: ctx.headers.origin })
-  const websocketId = websocketIdFromClientId(clientId)
-
+  let email: string | undefined
   const ws = PongWS(await ctx.ws())
-  if (websocketsForClient[websocketId]) {
-    websocketsForClient[websocketId].push(ws)
-  } else {
-    websocketsForClient[websocketId] = [ws]
-  }
-
-  serverStatus.counts.client = _.keys(websocketsForClient).length
-
+  await (await elementTrackerCollection).insertOne(
+    ConnectionSave.check({ type: "connected", ...connectionLocation, timestamp: new Date() })
+  )
   ws.addEventListener(
     "message",
     filterPingPongMessages(async ({ data }) => {
       const message = JSON.parse(data.toString())
       if (UpdateMessage.guard(message)) {
-        // if (message.value.length > maxEditorSize) {
-        //   return ctx.throw(400, "Content too large")
-        // }
-        await doUpdate(clientId, message)
-        // serverStatus.counts.save++
-        // } else if (GetMessage.guard(message)) {
-        //   serverStatus.counts.get++
-        //   await doGet(clientId, message)
-        // } else {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const savedUpdate = UpdateSave.check({
+          ...connectionLocation,
+          ...message,
+          ...(email && { email }),
+          timestamp: new Date(),
+        })
+        await (await elementTrackerCollection).insertOne(savedUpdate)
+      } else if (LoginMessage.guard(message)) {
+        if (googleClient) {
+          const { googleToken: idToken } = message
+          try {
+            email = (
+              await googleClient.verifyIdToken({
+                idToken,
+                audience: googleClientIDs || [],
+              })
+            ).getPayload()?.email
+            const savedLogin = LoginSave.check({
+              ...connectionLocation,
+              type: "login",
+              email,
+              timestamp: new Date(),
+            })
+            await (await elementTrackerCollection).insertOne(savedLogin)
+          } catch (err) {}
+        }
+      } else {
         console.error(`Bad message: ${JSON.stringify(message, null, 2)}`)
       }
     })
   )
-  ws.addEventListener("close", () => {
-    terminate(websocketId, ws)
+  ws.addEventListener("close", async () => {
+    await (await elementTrackerCollection).insertOne(
+      ConnectionSave.check({ type: "disconnected", ...connectionLocation, timestamp: new Date() })
+    )
   })
 })
 
 elementTrackerCollection.then(async (c) => {
-  console.log(JSON.stringify(serverStatus, null, 2))
-
   await c.createIndex({ clientId: 1, editorId: 1, timestamp: 1 })
 
   const validDomains = process.env.VALID_DOMAINS && process.env.VALID_DOMAINS.split(",").map((s) => s.trim)
@@ -171,7 +122,6 @@ elementTrackerCollection.then(async (c) => {
     .use(router.allowedMethods())
     .listen(port)
 })
-
 
 process.on("uncaughtException", (err) => {
   console.error(err)

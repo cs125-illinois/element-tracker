@@ -26,9 +26,6 @@ module.exports = {
   target: "node",
   resolve: {
     extensions: [".wasm", ".mjs", ".js", ".json", ".ts"],
-    alias: {
-      "mace-types": path.resolve(__dirname, "types/"),
-    },
   },
   externals: {
     bufferutil: "__client_only___",

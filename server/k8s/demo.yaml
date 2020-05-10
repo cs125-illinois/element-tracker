@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mace-deployment
+  name: element-tracker-deployment
   namespace: demo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mace
+      app: element-tracker
   template:
     metadata:
       labels:
-        app: mace
+        app: element-tracker
     spec:
       containers:
-        - name: mace
-          image: cs125/mace:latest
+        - name: element-tracker
+          image: cs125/element-tracker:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8888
@@ -40,7 +40,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mace-service
+  name: element-tracker-service
   namespace: demo
 spec:
   type: NodePort
@@ -49,7 +49,7 @@ spec:
       port: 80
       targetPort: 8888
   selector:
-    app: mace
+    app: element-tracker
 ---
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
@@ -58,15 +58,15 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/proxy-redirect-from: /
-    nginx.ingress.kubernetes.io/proxy-redirect-to: /demo/mace/
+    nginx.ingress.kubernetes.io/proxy-redirect-to: /demo/element-tracker/
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  name: mace-ingress
+  name: element-tracker-ingress
 spec:
   rules:
     - host: cs125-cloud.cs.illinois.edu
       http:
         paths:
-          - path: /demo/mace(/|$)(.*)
+          - path: /demo/element-tracker(/|$)(.*)
             backend:
-              serviceName: mace-service
+              serviceName: element-tracker-service
               servicePort: 80

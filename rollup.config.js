@@ -20,7 +20,7 @@ export default {
     commonJS({
       include: "node_modules/**",
       namedExports: {
-        runtypes: ["Record", "Partial", "Number", "String", "Array", "Static", "Union"],
+        runtypes: ["Record", "Partial", "Number", "String", "Array", "Static", "Union", "Lazy", "Boolean"],
       },
     }),
   ],
