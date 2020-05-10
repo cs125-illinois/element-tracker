@@ -12,6 +12,9 @@ import { components, SidebarMenu } from "./components"
 
 import { ElementTracker } from "@cs125/element-tracker"
 
+import { String } from "runtypes"
+const ET_SERVER = String.check(process.env.ET_SERVER)
+
 const App: React.FC = () => {
   const contextRef = useRef()
 
@@ -23,7 +26,7 @@ const App: React.FC = () => {
       <WithGoogleTokens>
         {({ idToken }): JSX.Element => {
           return (
-            <ElementTracker server={"ws://localhost:8888/"} tags={["h1", "h2", "h3", "h4"]} googleToken={idToken}>
+            <ElementTracker server={ET_SERVER} tags={["h1", "h2", "h3", "h4"]} googleToken={idToken}>
               <Container text>
                 <Ref innerRef={contextRef}>
                   <Segment basic>
