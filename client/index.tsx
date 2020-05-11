@@ -104,7 +104,7 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
   )
 
   useEffect(() => {
-    updateVisibleComponents()
+    window.addEventListener("load", updateVisibleComponents)
     window.addEventListener("scroll", updateVisibleComponents)
     window.addEventListener("resize", updateVisibleComponents)
     return (): void => {
