@@ -15,13 +15,16 @@ PrismLight.registerLanguage("bash", bash)
 import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx"
 PrismLight.registerLanguage("tsx", tsx)
 
-export const UpdateHash: React.FC<{ component: string }> = () => {
+export const UpdateHash: React.FC<{ tags: string[] }> = ({ tags }) => {
   const { components } = useElementTracker()
 
   useMemo(() => {
-    const firstVisible = components?.find((c) => c.visible)
+    const firstVisible = components?.find((c) => c.visible && tags.includes(c.tag))
     if (firstVisible) {
+      const element = document.getElementById(firstVisible.id as string)
+      element?.removeAttribute("id")
       history.replaceState(null, "", `#${firstVisible.id}`)
+      element?.setAttribute("id", firstVisible.id as string)
     }
   }, [components])
 
