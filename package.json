@@ -51,6 +51,7 @@
     "query-string": "^6.12.1",
     "reconnecting-websocket": "^4.4.0",
     "runtypes": "^4.2.0",
+    "string-hash": "^1.1.3",
     "throttle-debounce": "^2.1.0",
     "uuid": "^8.0.0",
     "ws": "^7.2.5"
@@ -75,6 +76,7 @@
     "@types/react": "^16.9.34",
     "@types/react-dom": "^16.9.7",
     "@types/react-syntax-highlighter": "^11.0.4",
+    "@types/string-hash": "^1.1.1",
     "@types/throttle-debounce": "^2.1.0",
     "@types/url-join": "^4.0.0",
     "@types/webpack-env": "^1.15.2",

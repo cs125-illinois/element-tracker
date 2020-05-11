@@ -6,7 +6,7 @@ import { PingWS } from "@cs125/pingpongws"
 
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
-import crypto from "crypto"
+import hash from "string-hash"
 import { throttle } from "throttle-debounce"
 
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
@@ -37,7 +37,7 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
   children,
 }) => {
   const [components, setComponents] = useState<Component[] | undefined>(undefined)
-  const [componentListHash, setComponentListHash] = useState<string | undefined>(undefined)
+  const [componentListHash, setComponentListHash] = useState<number | undefined>(undefined)
   const updateVisibleComponents = useCallback(
     throttle(updateDelay || 100, () => {
       const newComponents = Array.from(document.querySelectorAll(tags.join(", "))).map((componentNode) => {
@@ -57,7 +57,7 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
         })
       })
       setComponents(newComponents)
-      setComponentListHash(crypto.createHash("md5").update(JSON.stringify(newComponents)).digest("hex"))
+      setComponentListHash(hash(JSON.stringify(newComponents)))
     }),
     [tags]
   )
