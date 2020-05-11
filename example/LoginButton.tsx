@@ -22,8 +22,11 @@ const loginOrOut = (
 const LoginButton: React.FC = () => {
   const [busy, setBusy] = useState<boolean>(false)
 
-  const { ready, auth, isSignedIn } = withGoogleLogin()
+  const { ready, auth, isSignedIn, err } = withGoogleLogin()
 
+  if (err) {
+    return null
+  }
   return (
     <Button
       floated="right"
