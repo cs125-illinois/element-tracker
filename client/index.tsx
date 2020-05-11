@@ -6,17 +6,14 @@ import { PingWS } from "@cs125/pingpongws"
 
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
-import hash from "string-hash"
 import { throttle } from "throttle-debounce"
 
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
 
 interface ElementTrackerContext {
-  connected: boolean
   components: Component[] | undefined
 }
 const ElementTrackerContext = createContext<ElementTrackerContext>({
-  connected: false,
   components: undefined,
 })
 
@@ -36,17 +33,61 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
   reportDelay,
   children,
 }) => {
+  const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
+  const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
+  const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
+  useEffect(() => {
+    connection.current?.close()
+    connection.current = undefined
+    if (!server) {
+      return
+    }
+    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
+    connection.current = PingWS(new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`))
+    return (): void => {
+      connection.current?.close()
+      connection.current = undefined
+    }
+  }, [server])
+
   const [components, setComponents] = useState<Component[] | undefined>(undefined)
-  const [componentListHash, setComponentListHash] = useState<number | undefined>(undefined)
+  useEffect(() => {
+    if (!connection.current || !googleToken) {
+      return
+    }
+    const login = LoginMessage.check({
+      type: "login",
+      googleToken,
+    })
+    connection.current.send(JSON.stringify(login))
+  }, [connection.current, googleToken])
+
+  const report = useCallback(
+    throttle(reportDelay || 1000, (reportingComponents: Component[]) => {
+      if (!connection.current || !reportingComponents) {
+        return
+      }
+      const update = UpdateMessage.check({
+        type: "update",
+        browserId: browserId.current,
+        tabId: tabId.current,
+        location: window.location.href,
+        components: reportingComponents,
+      })
+      connection.current.send(JSON.stringify(update))
+    }),
+    [connection.current]
+  )
+
   const updateVisibleComponents = useCallback(
-    throttle(updateDelay || 100, () => {
+    throttle(updateDelay || 250, () => {
       const newComponents = Array.from(document.querySelectorAll(tags.join(", "))).map((componentNode) => {
         const { tagName, id } = componentNode
         const { height } = document.body.getBoundingClientRect()
         const text = componentNode.textContent
         const { top, bottom } = componentNode.getBoundingClientRect()
         const visible = top >= -10 && bottom <= height + 10
-        return Component.check({
+        return {
           tag: tagName.toLowerCase(),
           ...(id && { id }),
           ...(text && { text }),
@@ -54,10 +95,10 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
           top,
           height,
           bottom,
-        })
+        }
       })
       setComponents(newComponents)
-      setComponentListHash(hash(JSON.stringify(newComponents)))
+      report(newComponents)
     }),
     [tags]
   )
@@ -70,66 +111,9 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
       window.removeEventListener("scroll", updateVisibleComponents)
       window.removeEventListener("resize", updateVisibleComponents)
     }
-  }, [updateVisibleComponents])
+  }, [])
 
-  const [connected, setConnected] = useState(false)
-  const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
-  const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
-  const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
-  useEffect(() => {
-    connection.current?.close()
-    if (!server) {
-      return
-    }
-
-    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
-    connection.current = PingWS(
-      new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, undefined, { startClosed: true })
-    )
-    connection.current.addEventListener("open", () => {
-      setConnected(true)
-    })
-    connection.current.addEventListener("close", () => {
-      setConnected(false)
-    })
-    connection.current.reconnect()
-    return (): void => {
-      connection.current?.close()
-    }
-  }, [server])
-
-  useEffect(() => {
-    if (!server || !connection.current || !googleToken) {
-      return
-    }
-    const login = LoginMessage.check({
-      type: "login",
-      googleToken,
-    })
-    connection.current.send(JSON.stringify(login))
-  }, [connected, googleToken])
-
-  const report = useCallback(
-    throttle(reportDelay || 1000, () => {
-      if (!server || !connection.current || !components) {
-        return
-      }
-      const update = UpdateMessage.check({
-        type: "update",
-        browserId: browserId.current,
-        tabId: tabId.current,
-        location: window.location.href,
-        components,
-      })
-      connection.current.send(JSON.stringify(update))
-    }),
-    [server, connected]
-  )
-  useEffect(() => {
-    report()
-  }, [componentListHash])
-
-  return <ElementTrackerContext.Provider value={{ connected, components }}>{children}</ElementTrackerContext.Provider>
+  return <ElementTrackerContext.Provider value={{ components }}>{children}</ElementTrackerContext.Provider>
 }
 ElementTracker.propTypes = {
   tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,

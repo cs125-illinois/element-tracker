@@ -8,7 +8,7 @@ import { Container, Ref, Responsive, Segment, Rail, Sticky } from "semantic-ui-r
 import { MDXProvider } from "@mdx-js/react"
 import Content from "./index.mdx"
 
-import { components, SidebarMenu } from "./components"
+import { components, SidebarMenu, UpdateHash } from "./components"
 
 import { ElementTracker } from "@cs125/element-tracker"
 
@@ -27,6 +27,7 @@ const App: React.FC = () => {
         {({ idToken }): JSX.Element => {
           return (
             <ElementTracker server={ET_SERVER} tags={["h1", "h2", "h3", "h4"]} googleToken={idToken}>
+              <UpdateHash component={"h2"} />
               <Container text>
                 <Ref innerRef={contextRef}>
                   <Segment basic>
