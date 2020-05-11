@@ -24,7 +24,7 @@ export default {
       },
     }),
   ],
-  external: ["react", "prop-types", "react-ace", "crypto"],
+  external: ["react", "prop-types"],
   onwarn: (warning, next) => {
     if (warning.code === "CIRCULAR_DEPENDENCY") return
     if (warning.code === "EVAL") return

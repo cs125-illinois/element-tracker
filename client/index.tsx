@@ -10,14 +10,14 @@ import { throttle } from "throttle-debounce"
 
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
 
-interface ElementTrackerContext {
+export interface ElementTrackerContext {
   components: Component[] | undefined
 }
-const ElementTrackerContext = createContext<ElementTrackerContext>({
+export const ElementTrackerContext = createContext<ElementTrackerContext>({
   components: undefined,
 })
 
-interface ElementTrackerProps {
+export interface ElementTrackerProps {
   tags: string[]
   server?: string
   googleToken?: string
@@ -124,7 +124,7 @@ ElementTracker.propTypes = {
   children: PropTypes.node.isRequired,
 }
 
-export { ElementTracker, ElementTrackerContext }
+export { ElementTracker }
 
 export const useElementTracker = (): ElementTrackerContext => {
   return useContext(ElementTrackerContext)

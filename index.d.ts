@@ -1,10 +1,3 @@
-export {
-  MaceEditor,
-  MaceProvider,
-  MaceProps,
-  MaceContext,
-  withMaceConnected,
-  WithMaceConnected,
-  WithMaceConnectedProps,
-} from "./client"
-export { UpdateMessage as MaceUpdateMessage } from "./types"
+export { ElementTracker, ElementTrackerProps, ElementTrackerContext, useElementTracker } from "./client"
+
+export { Component, ComponentTree } from "./types"
