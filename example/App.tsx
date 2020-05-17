@@ -8,7 +8,14 @@ import { Container, Ref, Responsive, Segment, Rail, Sticky } from "semantic-ui-r
 import { MDXProvider } from "@mdx-js/react"
 import Content from "./index.mdx"
 
-import { components, SidebarMenu, UpdateHash } from "./components"
+import { Highlighted, headings } from "@cs125/semantic-ui"
+
+const components = {
+  code: Highlighted,
+  ...headings,
+}
+
+import { SidebarMenu, UpdateHash } from "./components"
 
 import { ElementTracker } from "@cs125/element-tracker"
 

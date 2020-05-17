@@ -2,19 +2,22 @@ import React, { useState, useMemo, useLayoutEffect } from "react"
 import PropTypes from "prop-types"
 import styled from "styled-components"
 
-import Children from "react-children-utilities"
-import slugify from "slugify"
-
-import { LoremIpsum } from "react-lorem-ipsum"
 import { useElementTracker, Component } from "@cs125/element-tracker"
 import { List } from "semantic-ui-react"
 
-import PrismLight from "react-syntax-highlighter/dist/esm/prism-light"
-import style from "react-syntax-highlighter/dist/esm/styles/prism/tomorrow"
-import bash from "react-syntax-highlighter/dist/esm/languages/prism/bash"
-PrismLight.registerLanguage("bash", bash)
-import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx"
-PrismLight.registerLanguage("tsx", tsx)
+import { LoremIpsum as LI } from "lorem-ipsum"
+const lorem = new LI()
+
+export const LoremIpsum: React.FC<{ p: number }> = ({ p }) => {
+  const paragraphs = []
+  for (let i = 0; i < p; i++) {
+    paragraphs.push(<p>{lorem.generateParagraphs(1)}</p>)
+  }
+  return <React.Fragment>{paragraphs}</React.Fragment>
+}
+LoremIpsum.propTypes = {
+  p: PropTypes.number.isRequired,
+}
 
 export const UpdateHash: React.FC<{ tags: string[] }> = ({ tags }) => {
   const { components } = useElementTracker()
@@ -86,75 +89,4 @@ export const SidebarMenu: React.FC = () => {
       })}
     </List>
   )
-}
-interface HeadingProps {
-  id?: string
-  children: React.ReactNode
-}
-const Heading = (tag: string): React.FC<HeadingProps> => {
-  const WrappedHeading: React.FC<HeadingProps> = (props) => {
-    const { children } = props
-    const id = props.id || slugify(Children.onlyText(children), { lower: true })
-    return React.createElement(tag, { id }, children)
-  }
-  WrappedHeading.propTypes = {
-    id: PropTypes.string,
-    children: PropTypes.node.isRequired,
-  }
-  return WrappedHeading
-}
-
-interface CodeBlockProps {
-  className?: string
-  children: React.ReactNode
-}
-const CodeBlock: React.FC<CodeBlockProps> = (props) => {
-  const { className, children } = props
-  const language = className?.replace(/language-/, "") || ""
-  const contents = Children.onlyText(children).trim()
-  return (
-    <PrismLight style={style} language={language} customStyle={{ fontSize: "0.9rem" }}>
-      {contents}
-    </PrismLight>
-  )
-}
-CodeBlock.propTypes = {
-  className: PropTypes.string,
-  children: PropTypes.node.isRequired,
-}
-CodeBlock.defaultProps = {
-  className: "",
-}
-
-export const components = {
-  h1: Heading("h1"),
-  h2: Heading("h2"),
-  h3: Heading("h3"),
-  h4: Heading("h4"),
-  h5: Heading("h5"),
-  h6: Heading("h6"),
-  code: CodeBlock,
-}
-
-export class FakeContent extends React.PureComponent {
-  render(): React.ReactNode {
-    return (
-      <React.Fragment>
-        <components.h2>First</components.h2>
-        <LoremIpsum p={2} />
-        <components.h3>First First</components.h3>
-        <LoremIpsum p={1} />
-        <components.h3>First Second</components.h3>
-        <LoremIpsum p={3} />
-        <components.h4>First Second First</components.h4>
-        <LoremIpsum p={3} />
-        <components.h2>Second</components.h2>
-        <LoremIpsum p={4} />
-        <components.h3>Second First</components.h3>
-        <LoremIpsum p={1} />
-        <components.h4>Second First First</components.h4>
-        <LoremIpsum p={1} />
-      </React.Fragment>
-    )
-  }
 }
