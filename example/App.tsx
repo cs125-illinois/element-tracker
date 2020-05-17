@@ -34,7 +34,7 @@ const App: React.FC = () => {
         {({ idToken }): JSX.Element => {
           return (
             <ElementTracker server={ET_SERVER} tags={["h1", "h2", "h3", "h4"]} googleToken={idToken}>
-              <UpdateHash tags={["h2", "h3"]} />
+              <UpdateHash tags={["h2"]} />
               <Container text>
                 <Ref innerRef={contextRef}>
                   <Segment basic>

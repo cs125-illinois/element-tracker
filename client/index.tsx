@@ -86,12 +86,10 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
         const { height } = document.body.getBoundingClientRect()
         const text = componentNode.textContent
         const { top, bottom } = componentNode.getBoundingClientRect()
-        const visible = top >= -10 && bottom <= height + 10
         return {
           tag: tagName.toLowerCase(),
           ...(id && { id }),
           ...(text && { text }),
-          visible,
           top,
           height,
           bottom,

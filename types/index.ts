@@ -1,21 +1,7 @@
-import {
-  Record,
-  Partial,
-  Static,
-  String,
-  Array,
-  Literal,
-  Boolean,
-  Lazy,
-  Runtype,
-  Union,
-  InstanceOf,
-  Number,
-} from "runtypes"
+import { Record, Partial, Static, String, Array, Literal, Lazy, Runtype, Union, InstanceOf, Number } from "runtypes"
 
 export const Component = Record({
   tag: String,
-  visible: Boolean,
   top: Number,
   bottom: Number,
   height: Number,
