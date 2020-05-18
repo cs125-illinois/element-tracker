@@ -2,25 +2,22 @@ import React, { useRef } from "react"
 import { hot } from "react-hot-loader"
 
 import { GoogleLoginProvider, WithGoogleTokens } from "@cs125/react-google-login"
-
+import { ElementTracker } from "@cs125/element-tracker"
+import { UpdateHash } from "@cs125/semantic-ui"
 import { Container, Ref, Responsive, Segment, Rail, Sticky } from "semantic-ui-react"
 
 import { MDXProvider } from "@mdx-js/react"
 import Content from "./index.mdx"
 
-import { Highlighted, headings } from "@cs125/semantic-ui"
+import { Highlighted, headings, SidebarMenu } from "@cs125/semantic-ui"
+
+import { String } from "runtypes"
+const ET_SERVER = String.check(process.env.ET_SERVER)
 
 const components = {
   code: Highlighted,
   ...headings,
 }
-
-import { SidebarMenu, UpdateHash } from "./components"
-
-import { ElementTracker } from "@cs125/element-tracker"
-
-import { String } from "runtypes"
-const ET_SERVER = String.check(process.env.ET_SERVER)
 
 const App: React.FC = () => {
   const contextRef = useRef()
