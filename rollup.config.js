@@ -8,6 +8,7 @@ export default {
     format: "cjs",
     file: "./client/dist/index.cjs.js",
     sourcemap: true,
+    strict: false,
   },
   plugins: [
     typescript({
@@ -24,7 +25,7 @@ export default {
       },
     }),
   ],
-  external: ["react", "prop-types"],
+  external: ["react", "prop-types", "crypto"],
   onwarn: (warning, next) => {
     if (warning.code === "CIRCULAR_DEPENDENCY") return
     if (warning.code === "EVAL") return

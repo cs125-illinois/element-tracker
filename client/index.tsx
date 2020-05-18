@@ -36,21 +36,8 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
   const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
-  useEffect(() => {
-    connection.current?.close()
-    connection.current = undefined
-    if (!server) {
-      return
-    }
-    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
-    connection.current = PingWS(new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`))
-    return (): void => {
-      connection.current?.close()
-      connection.current = undefined
-    }
-  }, [server])
-
   const [components, setComponents] = useState<Component[] | undefined>(undefined)
+
   useEffect(() => {
     if (!connection.current || !googleToken) {
       return
@@ -64,7 +51,7 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
 
   const report = useCallback(
     throttle(reportDelay || 1000, (reportingComponents: Component[]) => {
-      if (!connection.current || !reportingComponents) {
+      if (!connection.current) {
         return
       }
       const update = UpdateMessage.check({
@@ -106,10 +93,31 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
     window.addEventListener("scroll", updateVisibleComponents)
     window.addEventListener("resize", updateVisibleComponents)
     return (): void => {
+      window.removeEventListener("load", updateVisibleComponents)
       window.removeEventListener("scroll", updateVisibleComponents)
       window.removeEventListener("resize", updateVisibleComponents)
     }
   }, [])
+
+  useEffect(() => {
+    connection.current?.close()
+    connection.current = undefined
+    if (!server) {
+      return
+    }
+    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
+    connection.current = PingWS(
+      new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, [], { startClosed: true })
+    )
+    connection.current.addEventListener("open", () => {
+      updateVisibleComponents()
+    })
+    connection.current.reconnect()
+    return (): void => {
+      connection.current?.close()
+      connection.current = undefined
+    }
+  }, [server])
 
   return <ElementTrackerContext.Provider value={{ components }}>{children}</ElementTrackerContext.Provider>
 }
