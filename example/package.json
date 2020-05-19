@@ -1,4 +1,7 @@
 {
+  "name": "@cs125/element-tracker",
+  "description": "Client and server support for tracking page component visibility.",
+  "version": "2020.5.9",
   "private": true,
   "scripts": {
     "build": "gatsby build",
