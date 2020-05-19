@@ -92,10 +92,13 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
     window.addEventListener("load", updateVisibleComponents)
     window.addEventListener("scroll", updateVisibleComponents)
     window.addEventListener("resize", updateVisibleComponents)
+    const mutationObserver = new MutationObserver(updateVisibleComponents)
+    mutationObserver.observe(document.body, { childList: true, subtree: true })
     return (): void => {
       window.removeEventListener("load", updateVisibleComponents)
       window.removeEventListener("scroll", updateVisibleComponents)
       window.removeEventListener("resize", updateVisibleComponents)
+      mutationObserver.disconnect()
     }
   }, [])
 
