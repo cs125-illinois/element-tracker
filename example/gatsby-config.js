@@ -1,7 +1,7 @@
 const path = require("path")
 
 module.exports = {
-  pathPrefix: "/semantic-ui",
+  pathPrefix: "/element-tracker",
   plugins: [
     "@cs125/gatsby-theme-cs125-docs",
     {

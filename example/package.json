@@ -1,22 +1,24 @@
 {
   "private": true,
   "scripts": {
-    "build": "gatsby build",
     "clean": "gatsby clean",
+    "depcheck": "depcheck --ignore-dirs .cache --ignores=@types/*,depcheck,@mdx-js/mdx,gatsby-alias-imports,gatsby-plugin-mdx,gatsby-source-filesystem,@cs125/element-tracker",
+    "deploy": "gatsby build --prefix-paths && gh-pages -d public",
     "develop": "gatsby develop",
     "ncu": "ncu",
-    "serve": "gatsby serve",
-    "start": "npm run develop",
-    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+    "redeploy": "gh-pages -d public",
+    "start": "npm run develop"
   },
   "dependencies": {
-    "@cs125/gatsby-theme-cs125-docs": "^2020.5.7",
+    "@cs125/gatsby-theme-cs125-docs": "^2020.5.11",
     "gatsby": "^2.22.0",
     "gatsby-alias-imports": "^1.0.4",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
+    "depcheck": "^0.9.2",
+    "gh-pages": "^2.2.0",
     "npm-check-updates": "^6.0.1"
   }
 }
