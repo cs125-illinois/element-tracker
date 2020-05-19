@@ -6,7 +6,7 @@
   "homepage": "https://github.com/cs125-illinois/element-tracker",
   "repository": "https://github.com/cs125-illinois/element-tracker",
   "bugs": "https://github.com/cs125-illinois/element-tracker/issues",
-  "version": "2020.5.7",
+  "version": "2020.5.8",
   "main": "client/dist/index.cjs.js",
   "files": [
     "client/dist/**/*"
