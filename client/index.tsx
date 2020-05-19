@@ -7,6 +7,7 @@ import { PingWS } from "@cs125/pingpongws"
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
 import { throttle } from "throttle-debounce"
+import isEqual from "react-fast-compare"
 
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
 
@@ -82,22 +83,25 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
           bottom,
         }
       })
-      setComponents(newComponents)
-      report(newComponents)
+      if (!isEqual(components, newComponents)) {
+        setComponents(newComponents)
+        report(newComponents)
+      }
     }),
     [tags]
   )
 
   useEffect(() => {
-    window.addEventListener("load", updateVisibleComponents)
+    updateVisibleComponents()
     window.addEventListener("scroll", updateVisibleComponents)
     window.addEventListener("resize", updateVisibleComponents)
+    window.addEventListener("hashchange", updateVisibleComponents)
     const mutationObserver = new MutationObserver(updateVisibleComponents)
     mutationObserver.observe(document.body, { childList: true, subtree: true })
     return (): void => {
-      window.removeEventListener("load", updateVisibleComponents)
       window.removeEventListener("scroll", updateVisibleComponents)
       window.removeEventListener("resize", updateVisibleComponents)
+      window.removeEventListener("hashchange", updateVisibleComponents)
       mutationObserver.disconnect()
     }
   }, [])
