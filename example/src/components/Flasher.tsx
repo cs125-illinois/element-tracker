@@ -6,14 +6,12 @@ const lorem = new LI()
 const Flasher: React.FC = () => {
   const content = useRef(lorem.generateParagraphs(1))
   const [visible, setVisible] = useState(false)
-  const timer = useRef(
-    setTimeout(() => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
       setVisible(!visible)
     }, 1000)
-  )
-  useEffect(() => {
     return (): void => {
-      clearTimeout(timer.current)
+      clearTimeout(timer)
     }
   })
   return visible ? (

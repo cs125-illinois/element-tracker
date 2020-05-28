@@ -11,6 +11,9 @@ import { throttle, debounce } from "throttle-debounce"
 import "intersection-observer"
 
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
+import mobile from "is-mobile"
+
+const isMobile = mobile()
 
 export interface ElementTrackerContext {
   components: Component[] | undefined
@@ -26,13 +29,31 @@ export interface ElementTrackerProps {
   reportDelay?: number
   children: React.ReactNode
 }
+
+const getTracked = (tags: string[]) => Array.from(document.querySelectorAll(tags.join(", ")))
+const getComponents = (tracked: Element[]) => {
+  return tracked.map((componentNode) => {
+    const { tagName, id } = componentNode
+    const { height } = document.body.getBoundingClientRect()
+    const text = componentNode.textContent
+    const { top, bottom } = componentNode.getBoundingClientRect()
+    return {
+      tag: tagName.toLowerCase(),
+      ...(id && { id }),
+      ...(text && { text }),
+      top,
+      height,
+      bottom,
+    }
+  })
+}
 export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, googleToken, reportDelay, children }) => {
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
   const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
 
-  const [tracked, setTracked] = useState<Element[]>([])
-  const [components, setComponents] = useState<Component[] | undefined>(undefined)
+  const [tracked, setTracked] = useState<Element[]>(getTracked(tags))
+  const [components, setComponents] = useState<Component[]>(getComponents(tracked))
 
   useEffect(() => {
     if (!googleToken) {
@@ -62,25 +83,12 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, go
   )
 
   const updateVisibleComponents = useCallback(() => {
-    const newComponents = tracked.map((componentNode) => {
-      const { tagName, id } = componentNode
-      const { height } = document.body.getBoundingClientRect()
-      const text = componentNode.textContent
-      const { top, bottom } = componentNode.getBoundingClientRect()
-      return {
-        tag: tagName.toLowerCase(),
-        ...(id && { id }),
-        ...(text && { text }),
-        top,
-        height,
-        bottom,
-      }
-    })
+    const newComponents = getComponents(tracked)
     setComponents(newComponents)
     report(newComponents)
   }, [tracked, report])
 
-  const updateTracked = useCallback(() => setTracked(Array.from(document.querySelectorAll(tags.join(", ")))), [tags])
+  const updateTracked = useCallback(() => setTracked(getTracked(tags)), [tags])
   useEffect(() => updateTracked(), [updateTracked])
   useEffect(() => {
     const mutationObserver = new MutationObserver(updateTracked)
@@ -166,9 +174,7 @@ export const componentListToTree = (components: Component[]): ComponentTree[] =>
 
 export { Component, ComponentTree } from "../types"
 
-export function atTop(): boolean {
-  return (document.documentElement.scrollTop || document.body.scrollTop) === 0
-}
+export const atTop = (): boolean => (document.documentElement.scrollTop || document.body.scrollTop) === 0
 export function atBottom(): boolean {
   const documentHeight = Math.max(
     document.body.scrollHeight,
@@ -205,4 +211,55 @@ export function active<T extends Component>(components: Array<T>): T | undefined
   } else {
     return components[0]
   }
+}
+
+interface UpdateHashProps {
+  tags?: string[]
+}
+export const UpdateHash: React.FC<UpdateHashProps> = ({ tags }) => {
+  const hash = useRef<string>((typeof window !== `undefined` && window.location.hash) || " ")
+  const hashTimer = useRef<number | undefined>(undefined)
+
+  const setHash = useRef((newHash: string) => {
+    if (hashTimer.current) {
+      clearTimeout(hashTimer.current)
+    }
+    hashTimer.current = setTimeout(
+      () => {
+        if (hash.current !== newHash) {
+          hash.current = newHash
+          window.history.replaceState({}, "", newHash)
+        }
+      },
+      isMobile ? 100 : 0
+    )
+  })
+
+  const { components } = useElementTracker()
+  useEffect(() => {
+    if (atTop() && !atBottom()) {
+      setHash.current(" ")
+      return
+    }
+    const activeHash = components && active(components.filter((c) => c.id && tags && tags.includes(c.tag)))
+    activeHash && setHash.current(`#${activeHash.id}`)
+  }, [tags, components])
+
+  useEffect(() => {
+    const hashListener = (): void => {
+      hash.current = window.location.hash || " "
+    }
+    window.addEventListener("hashchange", hashListener)
+    return (): void => {
+      window.removeEventListener("hashchange", hashListener)
+    }
+  }, [])
+
+  return null
+}
+UpdateHash.propTypes = {
+  tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+}
+UpdateHash.defaultProps = {
+  tags: ["h2"],
 }

@@ -6,6 +6,7 @@ export {
   active,
   atBottom,
   atTop,
+  UpdateHash,
 } from "./client"
 
 export { Component, ComponentTree } from "./types"
