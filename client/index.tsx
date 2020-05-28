@@ -7,7 +7,6 @@ import { PingWS } from "@cs125/pingpongws"
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
 import { throttle, debounce } from "throttle-debounce"
-import isEqual from "react-fast-compare"
 
 import "intersection-observer"
 
@@ -24,18 +23,10 @@ export interface ElementTrackerProps {
   tags: string[]
   server?: string
   googleToken?: string
-  updateDelay?: number
   reportDelay?: number
   children: React.ReactNode
 }
-export const ElementTracker: React.FC<ElementTrackerProps> = ({
-  tags,
-  server,
-  googleToken,
-  updateDelay,
-  reportDelay,
-  children,
-}) => {
+export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, googleToken, reportDelay, children }) => {
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
   const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
@@ -44,59 +35,53 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   const [components, setComponents] = useState<Component[] | undefined>(undefined)
 
   useEffect(() => {
-    if (!connection.current || !googleToken) {
+    if (!googleToken) {
       return
     }
     const login = LoginMessage.check({
       type: "login",
       googleToken,
     })
-    connection.current.send(JSON.stringify(login))
-  }, [connection.current, googleToken])
+    connection.current?.send(JSON.stringify(login))
+  }, [connection, googleToken])
 
   const report = useCallback(
-    throttle(reportDelay || 1000, (reportingComponents: Component[]) => {
-      if (!connection.current) {
-        return
-      }
-      const update = UpdateMessage.check({
-        type: "update",
-        browserId: browserId.current,
-        tabId: tabId.current,
-        location: window.location.href,
-        components: reportingComponents,
+    (reportingComponents: Component[]) => {
+      throttle(reportDelay || 1000, () => {
+        const update = UpdateMessage.check({
+          type: "update",
+          browserId: browserId.current,
+          tabId: tabId.current,
+          location: window.location.href,
+          components: reportingComponents,
+        })
+        connection.current?.send(JSON.stringify(update))
       })
-      connection.current.send(JSON.stringify(update))
-    }),
-    [connection.current]
+    },
+    [reportDelay]
   )
 
-  const updateVisibleComponents = useCallback(
-    throttle(updateDelay || 250, () => {
-      const newComponents = tracked.map((componentNode) => {
-        const { tagName, id } = componentNode
-        const { height } = document.body.getBoundingClientRect()
-        const text = componentNode.textContent
-        const { top, bottom } = componentNode.getBoundingClientRect()
-        return {
-          tag: tagName.toLowerCase(),
-          ...(id && { id }),
-          ...(text && { text }),
-          top,
-          height,
-          bottom,
-        }
-      })
-      if (!isEqual(components, newComponents)) {
-        setComponents(newComponents)
-        report(newComponents)
+  const updateVisibleComponents = useCallback(() => {
+    const newComponents = tracked.map((componentNode) => {
+      const { tagName, id } = componentNode
+      const { height } = document.body.getBoundingClientRect()
+      const text = componentNode.textContent
+      const { top, bottom } = componentNode.getBoundingClientRect()
+      return {
+        tag: tagName.toLowerCase(),
+        ...(id && { id }),
+        ...(text && { text }),
+        top,
+        height,
+        bottom,
       }
-    }),
-    [tracked]
-  )
+    })
+    setComponents(newComponents)
+    report(newComponents)
+  }, [tracked, report])
 
   const updateTracked = useCallback(() => setTracked(Array.from(document.querySelectorAll(tags.join(", ")))), [tags])
-  useEffect(() => updateTracked(), [tags])
+  useEffect(() => updateTracked(), [updateTracked])
   useEffect(() => {
     const mutationObserver = new MutationObserver(updateTracked)
     mutationObserver.observe(document.body, { childList: true, subtree: true })
@@ -106,7 +91,7 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
       mutationObserver.disconnect()
       window.removeEventListener("scroll", scrollEndListener)
     }
-  }, [updateVisibleComponents])
+  }, [updateTracked, updateVisibleComponents])
 
   useEffect(() => {
     const intersectionObserver = new IntersectionObserver(updateVisibleComponents)
@@ -114,21 +99,18 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     return (): void => {
       intersectionObserver.disconnect()
     }
-  }, [tracked])
+  }, [tracked, updateVisibleComponents])
 
   useEffect(() => {
     connection.current?.close()
-    connection.current = undefined
     if (!server) {
+      connection.current = undefined
       return
     }
     const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
     connection.current = PingWS(
       new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, [], { startClosed: true })
     )
-    connection.current.addEventListener("open", () => {
-      updateVisibleComponents()
-    })
     connection.current.reconnect()
     return (): void => {
       connection.current?.close()
@@ -136,13 +118,19 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     }
   }, [server])
 
+  useEffect(() => {
+    connection.current?.addEventListener("open", updateVisibleComponents)
+    return (): void => {
+      connection.current?.removeEventListener("open", updateVisibleComponents)
+    }
+  }, [updateVisibleComponents])
+
   return <ElementTrackerContext.Provider value={{ components }}>{children}</ElementTrackerContext.Provider>
 }
 ElementTracker.propTypes = {
   tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   server: PropTypes.string,
   googleToken: PropTypes.string,
-  updateDelay: PropTypes.number,
   reportDelay: PropTypes.number,
   children: PropTypes.node.isRequired,
 }
