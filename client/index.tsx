@@ -9,6 +9,8 @@ import queryString from "query-string"
 import { throttle } from "throttle-debounce"
 import isEqual from "react-fast-compare"
 
+import "intersection-observer"
+
 import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
 
 export interface ElementTrackerContext {
@@ -37,6 +39,8 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
   const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
+
+  const [tracked, setTracked] = useState<Element[]>([])
   const [components, setComponents] = useState<Component[] | undefined>(undefined)
 
   useEffect(() => {
@@ -69,7 +73,7 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
 
   const updateVisibleComponents = useCallback(
     throttle(updateDelay || 250, () => {
-      const newComponents = Array.from(document.querySelectorAll(tags.join(", "))).map((componentNode) => {
+      const newComponents = tracked.map((componentNode) => {
         const { tagName, id } = componentNode
         const { height } = document.body.getBoundingClientRect()
         const text = componentNode.textContent
@@ -88,23 +92,26 @@ const ElementTracker: React.FC<ElementTrackerProps> = ({
         report(newComponents)
       }
     }),
-    [tags]
+    [tracked]
   )
 
+  const updateTracked = useCallback(() => setTracked(Array.from(document.querySelectorAll(tags.join(", ")))), [tags])
+  useEffect(() => updateTracked(), [tags])
   useEffect(() => {
-    updateVisibleComponents()
-    window.addEventListener("scroll", updateVisibleComponents)
-    window.addEventListener("resize", updateVisibleComponents)
-    window.addEventListener("hashchange", updateVisibleComponents)
-    const mutationObserver = new MutationObserver(updateVisibleComponents)
+    const mutationObserver = new MutationObserver(updateTracked)
     mutationObserver.observe(document.body, { childList: true, subtree: true })
     return (): void => {
-      window.removeEventListener("scroll", updateVisibleComponents)
-      window.removeEventListener("resize", updateVisibleComponents)
-      window.removeEventListener("hashchange", updateVisibleComponents)
       mutationObserver.disconnect()
     }
   }, [])
+
+  useEffect(() => {
+    const intersectionObserver = new IntersectionObserver(updateVisibleComponents)
+    tracked.forEach((element) => intersectionObserver.observe(element))
+    return (): void => {
+      intersectionObserver.disconnect()
+    }
+  }, [tracked])
 
   useEffect(() => {
     connection.current?.close()
@@ -169,3 +176,44 @@ export const componentListToTree = (components: Component[]): ComponentTree[] =>
 }
 
 export { Component, ComponentTree } from "../types"
+
+export function atTop(): boolean {
+  return (document.documentElement.scrollTop || document.body.scrollTop) === 0
+}
+export function atBottom(): boolean {
+  const documentHeight = Math.max(
+    document.body.scrollHeight,
+    document.documentElement.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.offsetHeight,
+    document.body.clientHeight,
+    document.documentElement.clientHeight
+  )
+  return (document.documentElement.scrollTop || document.body.scrollTop) + window.innerHeight === documentHeight
+}
+
+export function active<T extends Component>(components: Array<T>): T | undefined {
+  if (components.length === 0) {
+    return undefined
+  }
+  if (components.length === 1) {
+    return components[0]
+  }
+
+  if (atBottom() && window.location.hash) {
+    const hashedComponent = components.find((c) => c.id === window.location.hash.substring(1))
+    if (hashedComponent && hashedComponent.top >= 0) {
+      return hashedComponent
+    }
+  }
+
+  const onScreenHeaders = components.filter((c) => c.top >= 0)
+  const offScreenHeaders = components.filter((c) => c.top < 0)
+  if (onScreenHeaders.length > 0 && onScreenHeaders[0].bottom < onScreenHeaders[0].height) {
+    return onScreenHeaders[0]
+  } else if (offScreenHeaders.length > 0) {
+    return offScreenHeaders[offScreenHeaders.length - 1]
+  } else {
+    return components[0]
+  }
+}
