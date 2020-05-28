@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "backend": "docker-compose --env-file example/.env.development -p $npm_package_name up",
-    "build": "npm run build:client && npm run docker:build && npm run build:docs",
+    "build": "npm run build:client && npm run docker:build && npm run build:demo",
     "build:client": "rm -rf client/dist && GIT_COMMIT=$(git show --no-patch --format=%h) rollup -c && cp index.d.ts client/dist/ && rm -rf client/dist/example",
     "build:demo": "cd example && npm run deploy",
     "build:server": "rm -rf server/dist && GIT_COMMIT=$(git show --no-patch --format=%h) webpack",
