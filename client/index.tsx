@@ -28,7 +28,7 @@ export interface ElementTrackerProps {
   reportDelay?: number
   children: React.ReactNode
 }
-const ElementTracker: React.FC<ElementTrackerProps> = ({
+export const ElementTracker: React.FC<ElementTrackerProps> = ({
   tags,
   server,
   googleToken,
@@ -143,8 +143,6 @@ ElementTracker.propTypes = {
   reportDelay: PropTypes.number,
   children: PropTypes.node.isRequired,
 }
-
-export { ElementTracker }
 
 export const useElementTracker = (): ElementTrackerContext => {
   return useContext(ElementTrackerContext)
