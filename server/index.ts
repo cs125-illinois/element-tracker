@@ -26,7 +26,7 @@ const MONGODB = String.check(process.env.MONGODB)
 const MONGODB_COLLECTION = String.check(process.env.MONGODB_COLLECTION || "elementTracker")
 
 const app = new Koa()
-const router = new Router<{}, { ws: () => Promise<WebSocket> }>()
+const router = new Router<Record<string, unknown>, { ws: () => Promise<WebSocket> }>()
 
 const googleClientIDs =
   process.env.GOOGLE_CLIENT_IDS && Array(String).check(process.env.GOOGLE_CLIENT_IDS?.split(",").map((s) => s.trim()))
