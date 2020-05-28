@@ -6,7 +6,7 @@ import { PingWS } from "@cs125/pingpongws"
 
 import { v4 as uuidv4 } from "uuid"
 import queryString from "query-string"
-import { throttle } from "throttle-debounce"
+import { throttle, debounce } from "throttle-debounce"
 import isEqual from "react-fast-compare"
 
 import "intersection-observer"
@@ -100,10 +100,13 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   useEffect(() => {
     const mutationObserver = new MutationObserver(updateTracked)
     mutationObserver.observe(document.body, { childList: true, subtree: true })
+    const scrollEndListener = debounce(100, updateVisibleComponents)
+    window.addEventListener("scroll", scrollEndListener)
     return (): void => {
       mutationObserver.disconnect()
+      window.removeEventListener("scroll", scrollEndListener)
     }
-  }, [])
+  }, [updateVisibleComponents])
 
   useEffect(() => {
     const intersectionObserver = new IntersectionObserver(updateVisibleComponents)
