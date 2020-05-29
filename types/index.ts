@@ -14,6 +14,12 @@ export const ConnectionQuery = Record({
 )
 export type ConnectionQuery = Static<typeof ConnectionQuery>
 
+export const Versions = Record({
+  commit: String,
+  server: String,
+})
+export type Versions = Static<typeof Versions>
+
 export const ConnectionLocation = Record({
   origin: String,
   browserId: String,
@@ -25,6 +31,7 @@ export const ConnectionSave = Union(
   ConnectionLocation,
   Record({
     type: Union(Literal("connected"), Literal("disconnected")),
+    versions: Versions,
     timestamp: InstanceOf(Date),
   })
 )
@@ -46,9 +53,11 @@ export const UpdateMessage = Record({
 export type UpdateMessage = Static<typeof UpdateMessage>
 
 export const UpdateSave = Union(
+  Versions,
   ConnectionLocation,
   UpdateMessage,
   Record({
+    versions: Versions,
     timestamp: InstanceOf(Date),
   }),
   Partial({
@@ -64,9 +73,11 @@ export const LoginMessage = Record({
 export type LoginMessage = Static<typeof LoginMessage>
 
 export const LoginSave = Union(
+  Versions,
   ConnectionLocation,
   Record({
     type: Literal("login"),
+    versions: Versions,
     timestamp: InstanceOf(Date),
     email: String,
   })

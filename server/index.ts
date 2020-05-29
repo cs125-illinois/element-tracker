@@ -22,6 +22,12 @@ import {
 } from "../types"
 
 import { String, Array } from "runtypes"
+
+const versions = {
+  commit: String.check(process.env.GIT_COMMIT),
+  server: String.check(process.env.npm_package_version),
+}
+
 const MONGODB = String.check(process.env.MONGODB)
 const MONGODB_COLLECTION = String.check(process.env.MONGODB_COLLECTION || "elementTracker")
 
@@ -54,7 +60,7 @@ router.get("/", async (ctx) => {
   let email: string | undefined
   const ws = PongWS(await ctx.ws())
   await (await elementTrackerCollection).insertOne(
-    ConnectionSave.check({ type: "connected", ...connectionLocation, timestamp: new Date() })
+    ConnectionSave.check({ versions, type: "connected", ...connectionLocation, timestamp: new Date() })
   )
   ws.addEventListener(
     "message",
@@ -63,6 +69,7 @@ router.get("/", async (ctx) => {
       if (UpdateMessage.guard(message)) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const savedUpdate = UpdateSave.check({
+          versions,
           ...connectionLocation,
           ...message,
           ...(email && { email }),
@@ -80,6 +87,7 @@ router.get("/", async (ctx) => {
               })
             ).getPayload()?.email
             const savedLogin = LoginSave.check({
+              versions,
               ...connectionLocation,
               type: "login",
               email,
@@ -95,7 +103,7 @@ router.get("/", async (ctx) => {
   )
   ws.addEventListener("close", async () => {
     await (await elementTrackerCollection).insertOne(
-      ConnectionSave.check({ type: "disconnected", ...connectionLocation, timestamp: new Date() })
+      ConnectionSave.check({ versions, type: "disconnected", ...connectionLocation, timestamp: new Date() })
     )
   })
 })
