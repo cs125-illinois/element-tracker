@@ -60,11 +60,13 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
         const { tagName } = element
         const { top, bottom } = element.getBoundingClientRect()
         const id = element.getAttribute("data-et-id") || element.id
+        const text = element.textContent
         return {
           tagName: tagName.toLowerCase(),
           top,
           bottom,
           ...(id && { id }),
+          ...(text && { text }),
         }
       })
       const { height, width } = document.body.getBoundingClientRect()

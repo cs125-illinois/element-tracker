@@ -47,7 +47,7 @@ export const UpdateMessage = Record({
       top: Number,
       bottom: Number,
       tagName: String,
-    }).And(Partial({ id: String }))
+    }).And(Partial({ id: String, text: String }))
   ),
 })
 export type UpdateMessage = Static<typeof UpdateMessage>
