@@ -12,7 +12,9 @@
     "client/dist/**/*"
   ],
   "scripts": {
-    "backend": "docker-compose --env-file example/.env.development -p $npm_package_name up",
+    "backend": "npm run backend:up ; npm run backend:down",
+    "backend:down": "docker-compose --env-file example/.env.development -p $npm_package_name down",
+    "backend:up": "docker-compose --env-file example/.env.development -p $npm_package_name up",
     "build": "npm run build:client && npm run docker:build && npm run build:demo",
     "build:client": "rm -rf client/dist && GIT_COMMIT=$(git show --no-patch --format=%h) rollup -c && cp index.d.ts client/dist/ && rm -rf client/dist/example",
     "build:demo": "cd example && npm run deploy",
@@ -92,7 +94,7 @@
     "eslint-plugin-react": "^7.20.0",
     "eslint-plugin-react-hooks": "^4.0.4",
     "husky": "^4.2.5",
-    "lint-staged": "^10.2.6",
+    "lint-staged": "^10.2.7",
     "lorem-ipsum": "^2.0.3",
     "nodemon": "^2.0.4",
     "npm-check-updates": "^6.0.1",

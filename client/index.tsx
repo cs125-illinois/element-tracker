@@ -66,19 +66,19 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, go
     connection.current?.send(JSON.stringify(login))
   }, [connection, googleToken])
 
+  // Passing an inline function here does not work.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const report = useCallback(
-    (reportingComponents: Component[]) => {
-      throttle(reportDelay || 1000, () => {
-        const update = UpdateMessage.check({
-          type: "update",
-          browserId: browserId.current,
-          tabId: tabId.current,
-          location: window.location.href,
-          components: reportingComponents,
-        })
-        connection.current?.send(JSON.stringify(update))
+    throttle(reportDelay || 1000, (reportingComponents: Component[]) => {
+      const update = UpdateMessage.check({
+        type: "update",
+        browserId: browserId.current,
+        tabId: tabId.current,
+        location: window.location.href,
+        components: reportingComponents,
       })
-    },
+      connection.current?.send(JSON.stringify(update))
+    }),
     [reportDelay]
   )
 
