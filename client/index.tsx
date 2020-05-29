@@ -10,51 +10,37 @@ import { throttle, debounce } from "throttle-debounce"
 
 import "intersection-observer"
 
-import { Component, ConnectionQuery, UpdateMessage, ComponentTree, LoginMessage } from "../types"
-import mobile from "is-mobile"
-
-const isMobile = mobile()
+import { ConnectionQuery, UpdateMessage, ElementTree, LoginMessage } from "../types"
 
 export interface ElementTrackerContext {
-  components: Component[] | undefined
+  elements: Element[] | undefined
 }
 export const ElementTrackerContext = createContext<ElementTrackerContext>({
-  components: undefined,
+  elements: undefined,
 })
 
+const getElements = () => Array.from(document.querySelectorAll("[data-et]")) || []
+
 export interface ElementTrackerProps {
-  tags: string[]
   server?: string
   googleToken?: string
-  reportDelay?: number
+  updateInterval?: number
+  reportInterval?: number
   children: React.ReactNode
 }
-
-const getTracked = (tags: string[]) => Array.from(document.querySelectorAll(tags.join(", ")))
-const getComponents = (tracked: Element[]) => {
-  return tracked.map((componentNode) => {
-    const { tagName, id } = componentNode
-    const { height } = document.body.getBoundingClientRect()
-    const text = componentNode.textContent
-    const { top, bottom } = componentNode.getBoundingClientRect()
-    return {
-      tag: tagName.toLowerCase(),
-      ...(id && { id }),
-      ...(text && { text }),
-      top,
-      height,
-      bottom,
-    }
-  })
-}
-export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, googleToken, reportDelay, children }) => {
+export const ElementTracker: React.FC<ElementTrackerProps> = ({
+  server,
+  googleToken,
+  updateInterval = 100,
+  reportInterval = 1000,
+  children,
+}) => {
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(localStorage.getItem("element-tracker:id") || uuidv4())
   const tabId = useRef<string>(sessionStorage.getItem("element-tracker:id") || uuidv4())
 
-  const [tracked, setTracked] = useState<Element[]>(getTracked(tags))
-  const [components, setComponents] = useState<Component[]>(getComponents(tracked))
-
+  const [tracked, setTracked] = useState<Element[]>(getElements())
+  const [elements, setElements] = useState<Element[]>(getElements())
   useEffect(() => {
     if (!googleToken) {
       return
@@ -69,45 +55,69 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, go
   // Passing an inline function here does not work.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const report = useCallback(
-    throttle(reportDelay || 1000, (reportingComponents: Component[]) => {
+    throttle(reportInterval, (es: Element[]) => {
+      const elements = es.map((element) => {
+        const { tagName } = element
+        const { top, bottom } = element.getBoundingClientRect()
+        const id = element.getAttribute("data-et-id") || element.id
+        return {
+          tagName: tagName.toLowerCase(),
+          top,
+          bottom,
+          ...(id && { id }),
+        }
+      })
+      const { height, width } = document.body.getBoundingClientRect()
       const update = UpdateMessage.check({
         type: "update",
         browserId: browserId.current,
         tabId: tabId.current,
         location: window.location.href,
-        components: reportingComponents,
+        height,
+        width,
+        elements,
       })
       connection.current?.send(JSON.stringify(update))
     }),
-    [reportDelay]
+    [reportInterval]
   )
 
-  const updateVisibleComponents = useCallback(() => {
-    const newComponents = getComponents(tracked)
-    setComponents(newComponents)
-    report(newComponents)
-  }, [tracked, report])
+  // Passing an inline function here does not work.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const updateElements = useCallback(
+    throttle(updateInterval, () => {
+      const newElements = getElements()
+      setElements(newElements)
+      report(newElements)
+    }),
+    [report]
+  )
 
-  const updateTracked = useCallback(() => setTracked(getTracked(tags)), [tags])
-  useEffect(() => updateTracked(), [updateTracked])
   useEffect(() => {
-    const mutationObserver = new MutationObserver(updateTracked)
+    const mutationObserver = new MutationObserver(() => setTracked(getElements()))
     mutationObserver.observe(document.body, { childList: true, subtree: true })
-    const scrollEndListener = debounce(100, updateVisibleComponents)
-    window.addEventListener("scroll", scrollEndListener)
     return (): void => {
       mutationObserver.disconnect()
-      window.removeEventListener("scroll", scrollEndListener)
     }
-  }, [updateTracked, updateVisibleComponents])
+  }, [])
 
   useEffect(() => {
-    const intersectionObserver = new IntersectionObserver(updateVisibleComponents)
+    const delayedUpdateElements = debounce(100, updateElements)
+    window.addEventListener("scroll", delayedUpdateElements)
+    window.addEventListener("resize", delayedUpdateElements)
+    return (): void => {
+      window.removeEventListener("scroll", delayedUpdateElements)
+      window.removeEventListener("resize", delayedUpdateElements)
+    }
+  }, [updateElements])
+
+  useEffect(() => {
+    const intersectionObserver = new IntersectionObserver(updateElements)
     tracked.forEach((element) => intersectionObserver.observe(element))
     return (): void => {
       intersectionObserver.disconnect()
     }
-  }, [tracked, updateVisibleComponents])
+  }, [tracked, updateElements])
 
   useEffect(() => {
     connection.current?.close()
@@ -127,52 +137,56 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({ tags, server, go
   }, [server])
 
   useEffect(() => {
-    connection.current?.addEventListener("open", updateVisibleComponents)
+    connection.current?.addEventListener("open", updateElements)
     return (): void => {
-      connection.current?.removeEventListener("open", updateVisibleComponents)
+      connection.current?.removeEventListener("open", updateElements)
     }
-  }, [updateVisibleComponents])
+  }, [updateElements])
 
-  return <ElementTrackerContext.Provider value={{ components }}>{children}</ElementTrackerContext.Provider>
+  return <ElementTrackerContext.Provider value={{ elements }}>{children}</ElementTrackerContext.Provider>
 }
 ElementTracker.propTypes = {
-  tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
   server: PropTypes.string,
   googleToken: PropTypes.string,
-  reportDelay: PropTypes.number,
+  updateInterval: PropTypes.number,
+  reportInterval: PropTypes.number,
   children: PropTypes.node.isRequired,
+}
+ElementTracker.defaultProps = {
+  updateInterval: 100,
+  reportInterval: 1000,
 }
 
 export const useElementTracker = (): ElementTrackerContext => {
   return useContext(ElementTrackerContext)
 }
 
-export const componentListToTree = (components: Component[]): ComponentTree[] => {
-  const componentTree: ComponentTree[] = []
-  let componentLogger: string[] = []
-  components.forEach((c) => {
-    const component = ComponentTree.check({ ...c, children: [] })
-    if (componentTree.length == 0) {
-      componentTree.push(component)
+export const elementListToTree = (elements: Element[]): ElementTree[] => {
+  const elementTree: ElementTree[] = []
+  let elementLogger: string[] = []
+  elements.forEach((e) => {
+    const element = { ...e, descendants: [] } as ElementTree
+    if (elementTree.length == 0) {
+      elementTree.push(element)
     } else {
-      let level = componentLogger.indexOf(component.tag)
+      let level = elementLogger.indexOf(element.tagName)
       if (level == -1) {
-        level = componentLogger.length
+        level = elementLogger.length
       } else {
-        componentLogger = componentLogger.slice(0, level)
+        elementLogger = elementLogger.slice(0, level)
       }
-      const getChildrenArray = (tree: ComponentTree[], depth: number): ComponentTree[] => {
+      const getChildrenArray = (tree: ElementTree[], depth: number): ElementTree[] => {
         if (depth == 0) return tree
-        else return getChildrenArray(tree[tree.length - 1].children, depth - 1)
+        else return getChildrenArray(tree[tree.length - 1].descendants, depth - 1)
       }
-      getChildrenArray(componentTree, level).push(component)
+      getChildrenArray(elementTree, level).push(element)
     }
-    componentLogger.push(component.tag)
+    elementLogger.push(element.tagName)
   })
-  return componentTree
+  return elementTree
 }
 
-export { Component, ComponentTree } from "../types"
+export { ElementTree } from "../types"
 
 export const atTop = (): boolean => (document.documentElement.scrollTop || document.body.scrollTop) === 0
 export function atBottom(): boolean {
@@ -187,63 +201,58 @@ export function atBottom(): boolean {
   return (document.documentElement.scrollTop || document.body.scrollTop) + window.innerHeight === documentHeight
 }
 
-export function active<T extends Component>(components: Array<T>): T | undefined {
-  if (components.length === 0) {
+export function active<T extends Element>(elements: Array<T>): T | undefined {
+  if (elements.length === 0) {
     return undefined
-  }
-  if (components.length === 1) {
-    return components[0]
+  } else if (elements.length === 1) {
+    return elements[0]
   }
 
   if (atBottom() && window.location.hash) {
-    const hashedComponent = components.find((c) => c.id === window.location.hash.substring(1))
-    if (hashedComponent && hashedComponent.top >= 0) {
+    const hashedComponent = elements.find((e) => e.id && e.id === window.location.hash.substring(1))
+    if (hashedComponent && hashedComponent.getBoundingClientRect().top >= 0) {
       return hashedComponent
     }
   }
 
-  const onScreenHeaders = components.filter((c) => c.top >= 0)
-  const offScreenHeaders = components.filter((c) => c.top < 0)
-  if (onScreenHeaders.length > 0 && onScreenHeaders[0].bottom < onScreenHeaders[0].height) {
+  const { height } = document.body.getBoundingClientRect()
+  const onScreenHeaders = elements.filter((e) => e.getBoundingClientRect().top >= 0)
+  const offScreenHeaders = elements.filter((e) => e.getBoundingClientRect().top < 0)
+  if (onScreenHeaders.length > 0 && onScreenHeaders[0].getBoundingClientRect().bottom < height) {
     return onScreenHeaders[0]
   } else if (offScreenHeaders.length > 0) {
     return offScreenHeaders[offScreenHeaders.length - 1]
   } else {
-    return components[0]
+    return elements[0]
   }
 }
 
-interface UpdateHashProps {
-  tags?: string[]
+export interface UpdateHashProps {
+  filter?: (element: Element) => boolean
 }
-export const UpdateHash: React.FC<UpdateHashProps> = ({ tags }) => {
+export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true }) => {
   const hash = useRef<string>((typeof window !== `undefined` && window.location.hash) || " ")
-  const hashTimer = useRef<number | undefined>(undefined)
 
   const setHash = useRef((newHash: string) => {
-    if (hashTimer.current) {
-      clearTimeout(hashTimer.current)
+    if (hash.current !== newHash) {
+      hash.current = newHash
+      window.history.replaceState({}, "", newHash)
     }
-    hashTimer.current = setTimeout(
-      () => {
-        if (hash.current !== newHash) {
-          hash.current = newHash
-          window.history.replaceState({}, "", newHash)
-        }
-      },
-      isMobile ? 100 : 0
-    )
   })
 
-  const { components } = useElementTracker()
+  const { elements } = useElementTracker()
   useEffect(() => {
     if (atTop() && !atBottom()) {
       setHash.current(" ")
       return
     }
-    const activeHash = components && active(components.filter((c) => c.id && tags && tags.includes(c.tag)))
-    activeHash && setHash.current(`#${activeHash.id}`)
-  }, [tags, components])
+    const activeHash = elements && active(elements.filter((c) => filter(c)))
+    if (!activeHash) {
+      return
+    }
+    const id = activeHash.getAttribute("data-et-id") || activeHash.id
+    id && setHash.current(`#${id}`)
+  }, [filter, elements])
 
   useEffect(() => {
     const hashListener = (): void => {
@@ -258,8 +267,8 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ tags }) => {
   return null
 }
 UpdateHash.propTypes = {
-  tags: PropTypes.arrayOf(PropTypes.string.isRequired).isRequired,
+  filter: PropTypes.func,
 }
 UpdateHash.defaultProps = {
-  tags: ["h2"],
+  filter: () => true,
 }

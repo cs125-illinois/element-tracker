@@ -1,26 +1,8 @@
-import { Record, Partial, Static, String, Array, Literal, Lazy, Runtype, Union, InstanceOf, Number } from "runtypes"
+import { Record, Partial, Static, String, Array, Literal, Union, InstanceOf, Number } from "runtypes"
 
-export const Component = Record({
-  tag: String,
-  top: Number,
-  bottom: Number,
-  height: Number,
-}).And(
-  Partial({
-    id: String,
-    text: String,
-  })
-)
-export type Component = Static<typeof Component>
-
-export const ComponentTree: Runtype<ComponentTree> = Lazy(() =>
-  Component.And(
-    Record({
-      children: Array(ComponentTree),
-    })
-  )
-)
-export type ComponentTree = Component & { children: ComponentTree[] }
+export interface ElementTree extends Element {
+  descendants: ElementTree[]
+}
 
 export const ConnectionQuery = Record({
   browserId: String,
@@ -51,7 +33,15 @@ export type ConnectionSave = Static<typeof ConnectionSave>
 export const UpdateMessage = Record({
   type: Literal("update"),
   location: String,
-  components: Array(Component),
+  width: Number,
+  height: Number,
+  elements: Array(
+    Record({
+      top: Number,
+      bottom: Number,
+      tagName: String,
+    }).And(Partial({ id: String }))
+  ),
 })
 export type UpdateMessage = Static<typeof UpdateMessage>
 

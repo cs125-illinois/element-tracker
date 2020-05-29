@@ -7,6 +7,7 @@ export {
   atBottom,
   atTop,
   UpdateHash,
+  UpdateHashProps,
 } from "./client"
 
-export { Component, ComponentTree } from "./types"
+export { ElementTree } from "./types"
