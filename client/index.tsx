@@ -56,7 +56,7 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const report = useCallback(
     throttle(reportInterval, (es: Element[]) => {
-      const elements = es.map((element) => {
+      const elements = es.map(element => {
         const { tagName } = element
         const { top, bottom } = element.getBoundingClientRect()
         const id = element.getAttribute("data-et-id") || element.id
@@ -115,7 +115,7 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
 
   useEffect(() => {
     const intersectionObserver = new IntersectionObserver(updateElements)
-    tracked.forEach((element) => intersectionObserver.observe(element))
+    tracked.forEach(element => intersectionObserver.observe(element))
     return (): void => {
       intersectionObserver.disconnect()
     }
@@ -166,7 +166,7 @@ export const useElementTracker = (): ElementTrackerContext => {
 export const elementListToTree = (elements: Element[]): ElementTree[] => {
   const elementTree: ElementTree[] = []
   let elementLogger: string[] = []
-  elements.forEach((e) => {
+  elements.forEach(e => {
     const element = { ...e, descendants: [] } as ElementTree
     if (elementTree.length == 0) {
       elementTree.push(element)
@@ -203,7 +203,7 @@ export function atBottom(): boolean {
   return (document.documentElement.scrollTop || document.body.scrollTop) + window.innerHeight === documentHeight
 }
 
-export function active<T extends Element>(elements: Array<T>): T | undefined {
+export function active<T extends Element>(elements: Array<T>, windowTop = 0): T | undefined {
   if (elements.length === 0) {
     return undefined
   } else if (elements.length === 1) {
@@ -211,28 +211,39 @@ export function active<T extends Element>(elements: Array<T>): T | undefined {
   }
 
   if (atBottom() && window.location.hash) {
-    const hashedComponent = elements.find((e) => e.id && e.id === window.location.hash.substring(1))
-    if (hashedComponent && hashedComponent.getBoundingClientRect().top >= 0) {
+    const hashedComponent = elements.find(e => e.id && e.id === window.location.hash.substring(1))
+    if (hashedComponent && hashedComponent.getBoundingClientRect().top >= windowTop) {
       return hashedComponent
     }
   }
 
-  const { height } = document.body.getBoundingClientRect()
-  const onScreenHeaders = elements.filter((e) => e.getBoundingClientRect().top >= 0)
-  const offScreenHeaders = elements.filter((e) => e.getBoundingClientRect().top < 0)
-  if (onScreenHeaders.length > 0 && onScreenHeaders[0].getBoundingClientRect().bottom < height) {
-    return onScreenHeaders[0]
-  } else if (offScreenHeaders.length > 0) {
-    return offScreenHeaders[offScreenHeaders.length - 1]
+  const visible: T[] = []
+  const above: T[] = []
+  const below: T[] = []
+  elements.forEach(e => {
+    const { top, bottom } = e.getBoundingClientRect()
+    if (top >= windowTop && top < window.innerHeight && bottom >= windowTop && bottom < innerHeight) {
+      visible.push(e)
+    } else if (bottom < windowTop) {
+      above.push(e)
+    } else {
+      below.push(e)
+    }
+  })
+  if (visible.length > 0) {
+    return visible[0]
+  } else if (above.length > 0) {
+    return above[above.length - 1]
   } else {
-    return elements[0]
+    return below[0]
   }
 }
 
 export interface UpdateHashProps {
   filter?: (element: Element) => boolean
+  top?: number
 }
-export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true }) => {
+export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true, top = 0 }) => {
   const hash = useRef<string>((typeof window !== `undefined` && window.location.hash) || " ")
 
   const setHash = useRef((newHash: string) => {
@@ -248,13 +259,18 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
       setHash.current(" ")
       return
     }
-    const activeHash = elements && active(elements.filter((c) => filter(c)))
+    const activeHash =
+      elements &&
+      active(
+        elements.filter(c => filter(c)),
+        top
+      )
     if (!activeHash) {
       return
     }
     const id = activeHash.getAttribute("data-et-id") || activeHash.id
     id && setHash.current(`#${id}`)
-  }, [filter, elements])
+  }, [filter, elements, top])
 
   useEffect(() => {
     const hashListener = (): void => {

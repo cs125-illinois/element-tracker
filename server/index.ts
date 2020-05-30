@@ -35,14 +35,14 @@ const app = new Koa()
 const router = new Router<Record<string, unknown>, { ws: () => Promise<WebSocket> }>()
 
 const googleClientIDs =
-  process.env.GOOGLE_CLIENT_IDS && Array(String).check(process.env.GOOGLE_CLIENT_IDS?.split(",").map((s) => s.trim()))
+  process.env.GOOGLE_CLIENT_IDS && Array(String).check(process.env.GOOGLE_CLIENT_IDS?.split(",").map(s => s.trim()))
 const googleClient = googleClientIDs && googleClientIDs.length > 0 && new OAuth2Client()
 
 const { database } = mongodbUri.parse(MONGODB)
 const client = mongo.connect(MONGODB, { useNewUrlParser: true, useUnifiedTopology: true })
-const elementTrackerCollection = client.then((c) => c.db(database).collection(MONGODB_COLLECTION))
+const elementTrackerCollection = client.then(c => c.db(database).collection(MONGODB_COLLECTION))
 
-router.get("/", async (ctx) => {
+router.get("/", async ctx => {
   if (!ctx.ws) {
     ctx.body = {}
     return
@@ -108,15 +108,15 @@ router.get("/", async (ctx) => {
   })
 })
 
-elementTrackerCollection.then(async (c) => {
+elementTrackerCollection.then(async c => {
   await c.createIndex({ clientId: 1, editorId: 1, timestamp: 1 })
 
-  const validDomains = process.env.VALID_DOMAINS && process.env.VALID_DOMAINS.split(",").map((s) => s.trim)
+  const validDomains = process.env.VALID_DOMAINS && process.env.VALID_DOMAINS.split(",").map(s => s.trim)
   const port = process.env.BACKEND_PORT ? parseInt(process.env.BACKEND_PORT) : 8888
   app
     .use(
       cors({
-        origin: (ctx) => {
+        origin: ctx => {
           if (validDomains && validDomains.includes(ctx.headers.origin)) {
             return false
           }
@@ -131,6 +131,6 @@ elementTrackerCollection.then(async (c) => {
     .listen(port)
 })
 
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", err => {
   console.error(err)
 })
