@@ -69,14 +69,13 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
           ...(text && { text }),
         }
       })
-      const { height, width } = document.body.getBoundingClientRect()
       const update = UpdateMessage.check({
         type: "update",
         browserId: browserId.current,
         tabId: tabId.current,
         location: window.location.href,
-        height,
-        width,
+        width: window.innerWidth,
+        height: window.innerHeight,
         elements,
       })
       connection.current?.send(JSON.stringify(update))
