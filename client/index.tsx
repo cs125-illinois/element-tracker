@@ -36,8 +36,12 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   children,
 }) => {
   const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
-  const browserId = useRef<string>((window && localStorage.getItem("element-tracker:id")) || uuidv4())
-  const tabId = useRef<string>((window && sessionStorage.getItem("element-tracker:id")) || uuidv4())
+  const browserId = useRef<string>(
+    (typeof window !== "undefined" && localStorage.getItem("element-tracker:id")) || uuidv4()
+  )
+  const tabId = useRef<string>(
+    (typeof window !== "undefined" && sessionStorage.getItem("element-tracker:id")) || uuidv4()
+  )
 
   const [tracked, setTracked] = useState<Element[]>(getElements())
   const [elements, setElements] = useState<Element[]>(getElements())
