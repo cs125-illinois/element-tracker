@@ -275,6 +275,7 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
         top
       )
     if (!activeHash) {
+      setHash(" ")
       return
     }
     const id = activeHash.getAttribute("data-et-id") || activeHash.id
