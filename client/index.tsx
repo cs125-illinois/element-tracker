@@ -91,16 +91,14 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     [reportInterval]
   )
 
+  const updateElements = useCallback(() => {
+    const newElements = getElements()
+    setElements(newElements)
+    report(newElements)
+  }, [report])
   // Passing an inline function here does not work.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const updateElements = useCallback(
-    throttle(updateInterval, () => {
-      const newElements = getElements()
-      setElements(newElements)
-      report(newElements)
-    }),
-    [report]
-  )
+  const throttledUpdateElements = useCallback(throttle(updateInterval, updateElements), [report])
 
   useEffect(() => {
     const mutationObserver = new MutationObserver(() => setTracked(getElements()))
@@ -114,7 +112,7 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     const delayedUpdateElements = debounce(100, updateElements)
     window.addEventListener("scroll", delayedUpdateElements)
     window.addEventListener("resize", delayedUpdateElements)
-    window.addEventListener("popstate", updateElements)
+    window.addEventListener("popstate", delayedUpdateElements)
     return (): void => {
       window.removeEventListener("scroll", delayedUpdateElements)
       window.removeEventListener("resize", delayedUpdateElements)
@@ -123,12 +121,12 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   }, [updateElements])
 
   useEffect(() => {
-    const intersectionObserver = new IntersectionObserver(updateElements)
+    const intersectionObserver = new IntersectionObserver(throttledUpdateElements)
     tracked.forEach(element => intersectionObserver.observe(element))
     return (): void => {
       intersectionObserver.disconnect()
     }
-  }, [tracked, updateElements])
+  }, [tracked, throttledUpdateElements])
 
   useEffect(() => {
     connection.current?.close()
@@ -148,11 +146,11 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   }, [server])
 
   useEffect(() => {
-    connection.current?.addEventListener("open", updateElements)
+    connection.current?.addEventListener("open", throttledUpdateElements)
     return (): void => {
-      connection.current?.removeEventListener("open", updateElements)
+      connection.current?.removeEventListener("open", throttledUpdateElements)
     }
-  }, [updateElements])
+  }, [throttledUpdateElements])
 
   return (
     <ElementTrackerContext.Provider value={{ elements, updateElements }}>{children}</ElementTrackerContext.Provider>
