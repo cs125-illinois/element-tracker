@@ -1,4 +1,4 @@
-import { Record, Partial, Static, String, Array, Literal, Union, InstanceOf, Number } from "runtypes"
+import { Record, Partial, Static, String, Array, Literal, Union, InstanceOf, Number, Unknown } from "runtypes"
 
 export interface ElementTree extends Element {
   descendants: ElementTree[]
@@ -39,7 +39,7 @@ export type ConnectionSave = Static<typeof ConnectionSave>
 
 export const UpdateMessage = Record({
   type: Literal("update"),
-  location: InstanceOf(Location),
+  location: Unknown,
   width: Number,
   height: Number,
   elements: Array(

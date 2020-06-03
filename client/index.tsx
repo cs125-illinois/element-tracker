@@ -74,7 +74,6 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
   const report = useCallback(
     throttle(reportInterval, (es: Element[]) => {
       const elements = es.map(element => {
-        // TODO: Report location
         const { tagName } = element
         const { top, bottom } = element.getBoundingClientRect()
         const id = element.getAttribute("data-et-id") || element.id
