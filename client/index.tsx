@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback, createContext, useContext } from "react"
+import React, { useRef, useState, useEffect, useCallback, createContext, useContext, ReactNode } from "react"
 import PropTypes from "prop-types"
 
 import ReconnectingWebSocket from "reconnecting-websocket"
@@ -12,43 +12,52 @@ import "intersection-observer"
 
 import { ConnectionQuery, UpdateMessage, ElementTree, LoginMessage } from "../types"
 
-export interface ElementTrackerContext {
-  elements: Element[] | undefined
-  updateElements: () => void
+interface ElementTrackerServerContext {
+  report: (elements: Element[]) => void
 }
-export const ElementTrackerContext = createContext<ElementTrackerContext>({
-  elements: undefined,
-  updateElements: () => {
-    throw Error("ElementTrackerContext not defined")
+const ElementTrackerServerContext = createContext<ElementTrackerServerContext>({
+  report: () => {
+    throw Error("ElementTrackerServerContext not defined")
   },
 })
 
-const getElements = () => Array.from(document.querySelectorAll("[data-et]")) || []
-
-export interface ElementTrackerProps {
+export interface ElementTrackerServerProps {
   server?: string
   googleToken?: string
-  updateInterval?: number
   reportInterval?: number
-  children: React.ReactNode
+  children: ReactNode
 }
-export const ElementTracker: React.FC<ElementTrackerProps> = ({
+export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
   server,
   googleToken,
-  updateInterval = 100,
   reportInterval = 1000,
   children,
 }) => {
-  const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
   const browserId = useRef<string>(
     (typeof window !== "undefined" && localStorage.getItem("element-tracker:id")) || uuidv4()
   )
   const tabId = useRef<string>(
     (typeof window !== "undefined" && sessionStorage.getItem("element-tracker:id")) || uuidv4()
   )
+  const connection = useRef<ReconnectingWebSocket | undefined>(undefined)
 
-  const [tracked, setTracked] = useState<Element[]>(getElements())
-  const [elements, setElements] = useState<Element[]>(getElements())
+  useEffect(() => {
+    connection.current?.close()
+    if (!server) {
+      connection.current = undefined
+      return
+    }
+    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
+    connection.current = PingWS(
+      new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, [], { startClosed: true })
+    )
+    connection.current.reconnect()
+    return (): void => {
+      connection.current?.close()
+      connection.current = undefined
+    }
+  }, [server])
+
   useEffect(() => {
     if (!googleToken) {
       return
@@ -65,6 +74,7 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   const report = useCallback(
     throttle(reportInterval, (es: Element[]) => {
       const elements = es.map(element => {
+        // TODO: Report location
         const { tagName } = element
         const { top, bottom } = element.getBoundingClientRect()
         const id = element.getAttribute("data-et-id") || element.id
@@ -90,33 +100,56 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     }),
     [reportInterval]
   )
+  return <ElementTrackerServerContext.Provider value={{ report }}>{children}</ElementTrackerServerContext.Provider>
+}
+ElementTrackerServer.propTypes = {
+  server: PropTypes.string,
+  googleToken: PropTypes.string,
+  reportInterval: PropTypes.number,
+  children: PropTypes.node.isRequired,
+}
+ElementTrackerServer.defaultProps = {
+  reportInterval: 1000,
+}
+
+const getElements = () => Array.from(document.querySelectorAll("[data-et]")) || []
+
+export interface ElementTrackerContext {
+  elements: Element[]
+}
+export const ElementTrackerContext = createContext<ElementTrackerContext>({
+  elements: [],
+})
+
+export interface ElementTrackerProps {
+  children: React.ReactNode
+}
+export const ElementTracker: React.FC<ElementTrackerProps> = ({ children }) => {
+  const { report } = useContext(ElementTrackerServerContext)
+
+  const [tracked, setTracked] = useState<Element[]>([])
+  const [elements, setElements] = useState<Element[]>([])
 
   const updateElements = useCallback(() => {
     const newElements = getElements()
     setElements(newElements)
     report(newElements)
   }, [report])
+
   // Passing an inline function here does not work.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const throttledUpdateElements = useCallback(throttle(updateInterval, updateElements), [report])
+  const throttledUpdateElements = useCallback(throttle(100, updateElements), [report])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const delayedUpdateElements = useCallback(debounce(100, updateElements), [report])
 
   useEffect(() => {
+    setTracked(getElements())
+    updateElements()
     const mutationObserver = new MutationObserver(() => setTracked(getElements()))
     mutationObserver.observe(document.body, { childList: true, subtree: true })
     return (): void => {
+      setElements([])
       mutationObserver.disconnect()
-    }
-  }, [])
-
-  useEffect(() => {
-    const delayedUpdateElements = debounce(100, updateElements)
-    window.addEventListener("scroll", delayedUpdateElements)
-    window.addEventListener("resize", delayedUpdateElements)
-    window.addEventListener("popstate", delayedUpdateElements)
-    return (): void => {
-      window.removeEventListener("scroll", delayedUpdateElements)
-      window.removeEventListener("resize", delayedUpdateElements)
-      window.addEventListener("popstate", delayedUpdateElements)
     }
   }, [updateElements])
 
@@ -129,43 +162,18 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
   }, [tracked, throttledUpdateElements])
 
   useEffect(() => {
-    connection.current?.close()
-    if (!server) {
-      connection.current = undefined
-      return
-    }
-    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
-    connection.current = PingWS(
-      new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, [], { startClosed: true })
-    )
-    connection.current.reconnect()
+    window.addEventListener("scroll", delayedUpdateElements)
+    window.addEventListener("resize", delayedUpdateElements)
     return (): void => {
-      connection.current?.close()
-      connection.current = undefined
+      window.removeEventListener("scroll", delayedUpdateElements)
+      window.removeEventListener("resize", delayedUpdateElements)
     }
-  }, [server])
+  }, [delayedUpdateElements])
 
-  useEffect(() => {
-    connection.current?.addEventListener("open", throttledUpdateElements)
-    return (): void => {
-      connection.current?.removeEventListener("open", throttledUpdateElements)
-    }
-  }, [throttledUpdateElements])
-
-  return (
-    <ElementTrackerContext.Provider value={{ elements, updateElements }}>{children}</ElementTrackerContext.Provider>
-  )
+  return <ElementTrackerContext.Provider value={{ elements }}>{children}</ElementTrackerContext.Provider>
 }
 ElementTracker.propTypes = {
-  server: PropTypes.string,
-  googleToken: PropTypes.string,
-  updateInterval: PropTypes.number,
-  reportInterval: PropTypes.number,
   children: PropTypes.node.isRequired,
-}
-ElementTracker.defaultProps = {
-  updateInterval: 100,
-  reportInterval: 1000,
 }
 
 export const useElementTracker = (): ElementTrackerContext => {
@@ -253,7 +261,6 @@ export interface UpdateHashProps {
   top?: number
 }
 export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true, top = 0 }) => {
-  const location = useRef<string | undefined>((typeof window !== undefined && window.location.pathname) || undefined)
   const hash = useRef<string>((typeof window !== "undefined" && window.location.hash) || " ")
 
   const setHash = useCallback((newHash: string) => {
@@ -264,10 +271,8 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
   }, [])
 
   const { elements } = useElementTracker()
+
   useEffect(() => {
-    if (window.location.pathname !== location.current) {
-      return
-    }
     if (atTop() && !atBottom()) {
       setHash(" ")
       return

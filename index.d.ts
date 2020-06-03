@@ -1,4 +1,6 @@
 export {
+  ElementTrackerServer,
+  ElementTrackerServerProps,
   ElementTracker,
   ElementTrackerProps,
   ElementTrackerContext,
