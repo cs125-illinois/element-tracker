@@ -7,6 +7,8 @@ export interface ElementTree extends Element {
 export const ConnectionQuery = Record({
   browserId: String,
   tabId: String,
+  version: String,
+  commit: String,
 }).And(
   Partial({
     googleToken: String,
@@ -15,8 +17,14 @@ export const ConnectionQuery = Record({
 export type ConnectionQuery = Static<typeof ConnectionQuery>
 
 export const Versions = Record({
-  commit: String,
-  server: String,
+  commit: Record({
+    client: String,
+    server: String,
+  }),
+  version: Record({
+    client: String,
+    server: String,
+  }),
 })
 export type Versions = Static<typeof Versions>
 

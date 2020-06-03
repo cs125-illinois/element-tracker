@@ -19,11 +19,12 @@ import {
   UpdateSave,
   LoginMessage,
   LoginSave,
+  Versions,
 } from "../types"
 
 import { String, Array } from "runtypes"
 
-const versions = {
+const VERSIONS = {
   commit: String.check(process.env.GIT_COMMIT),
   server: String.check(process.env.npm_package_version),
 }
@@ -49,7 +50,18 @@ router.get("/", async ctx => {
   }
 
   const connectionQuery = ConnectionQuery.check(ctx.request.query)
-  const { browserId, tabId } = connectionQuery
+  const { browserId, tabId, version, commit } = connectionQuery
+
+  const versions = Versions.check({
+    version: {
+      server: VERSIONS.server,
+      client: version,
+    },
+    commit: {
+      server: VERSIONS.commit,
+      client: commit,
+    },
+  })
 
   const connectionLocation = ConnectionLocation.check({
     origin: ctx.headers.origin,

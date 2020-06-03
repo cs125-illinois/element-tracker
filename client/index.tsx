@@ -12,6 +12,10 @@ import "intersection-observer"
 
 import { ConnectionQuery, UpdateMessage, ElementTree, LoginMessage } from "../types"
 
+import { String } from "runtypes"
+const VERSION = String.check(process.env.npm_package_version)
+const COMMIT = String.check(process.env.GIT_COMMIT)
+
 interface ElementTrackerServerContext {
   report: (elements: Element[]) => void
 }
@@ -47,7 +51,12 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
       connection.current = undefined
       return
     }
-    const connectionQuery = ConnectionQuery.check({ browserId: browserId.current, tabId: tabId.current })
+    const connectionQuery = ConnectionQuery.check({
+      browserId: browserId.current,
+      tabId: tabId.current,
+      version: VERSION,
+      commit: COMMIT,
+    })
     connection.current = PingWS(
       new ReconnectingWebSocket(`${server}?${queryString.stringify(connectionQuery)}`, [], { startClosed: true })
     )
@@ -86,6 +95,7 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
           ...(text && { text }),
         }
       })
+      const { top, bottom } = window.document.body.getBoundingClientRect()
       const update = UpdateMessage.check({
         type: "update",
         browserId: browserId.current,
@@ -93,6 +103,8 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
         location: window.location,
         width: window.innerWidth,
         height: window.innerHeight,
+        top,
+        bottom,
         elements,
       })
       connection.current?.send(JSON.stringify(update))

@@ -1,3 +1,4 @@
+import replace from "@rollup/plugin-replace"
 import typescript from "rollup-plugin-typescript2"
 import resolve from "rollup-plugin-node-resolve"
 import commonJS from "rollup-plugin-commonjs"
@@ -16,6 +17,10 @@ export default {
         include: ["./client/**/*"],
         compilerOptions: { declaration: true },
       },
+    }),
+    replace({
+      "process.env.npm_package_version": `"${process.env.npm_package_version}"`,
+      "process.env.GIT_COMMIT": `"${process.env.GIT_COMMIT}"`,
     }),
     resolve({ preferBuiltins: true }),
     commonJS({
