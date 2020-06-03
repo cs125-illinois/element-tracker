@@ -253,10 +253,11 @@ export interface UpdateHashProps {
   top?: number
 }
 export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true, top = 0 }) => {
+  const location = useRef<string | undefined>((typeof window !== undefined && window.location.pathname) || undefined)
   const hash = useRef<string>((typeof window !== "undefined" && window.location.hash) || " ")
 
   const setHash = useCallback((newHash: string) => {
-    if (hash.current !== newHash) {
+    if (window.location.pathname === location.current && hash.current !== newHash) {
       hash.current = newHash
       window.history.replaceState({}, "", newHash)
     }
