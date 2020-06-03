@@ -91,7 +91,7 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
         type: "update",
         browserId: browserId.current,
         tabId: tabId.current,
-        location: window.location.href,
+        location: window.location,
         width: window.innerWidth,
         height: window.innerHeight,
         elements,

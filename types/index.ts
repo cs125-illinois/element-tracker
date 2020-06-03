@@ -39,7 +39,7 @@ export type ConnectionSave = Static<typeof ConnectionSave>
 
 export const UpdateMessage = Record({
   type: Literal("update"),
-  location: String,
+  location: InstanceOf(Location),
   width: Number,
   height: Number,
   elements: Array(
