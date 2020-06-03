@@ -257,7 +257,7 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
   const hash = useRef<string>((typeof window !== "undefined" && window.location.hash) || " ")
 
   const setHash = useCallback((newHash: string) => {
-    if (window.location.pathname === location.current && hash.current !== newHash) {
+    if (hash.current !== newHash) {
       hash.current = newHash
       window.history.replaceState({}, "", newHash)
     }
@@ -265,6 +265,9 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
 
   const { elements } = useElementTracker()
   useEffect(() => {
+    if (window.location.pathname !== location.current) {
+      return
+    }
     if (atTop() && !atBottom()) {
       setHash(" ")
       return
