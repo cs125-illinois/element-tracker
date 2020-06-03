@@ -14,9 +14,13 @@ import { ConnectionQuery, UpdateMessage, ElementTree, LoginMessage } from "../ty
 
 export interface ElementTrackerContext {
   elements: Element[] | undefined
+  updateElements: () => void
 }
 export const ElementTrackerContext = createContext<ElementTrackerContext>({
   elements: undefined,
+  updateElements: () => {
+    throw Error("ElementTrackerContext not defined")
+  },
 })
 
 const getElements = () => Array.from(document.querySelectorAll("[data-et]")) || []
@@ -150,7 +154,9 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     }
   }, [updateElements])
 
-  return <ElementTrackerContext.Provider value={{ elements }}>{children}</ElementTrackerContext.Provider>
+  return (
+    <ElementTrackerContext.Provider value={{ elements, updateElements }}>{children}</ElementTrackerContext.Provider>
+  )
 }
 ElementTracker.propTypes = {
   server: PropTypes.string,
