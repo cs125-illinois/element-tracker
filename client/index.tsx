@@ -110,9 +110,11 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({
     const delayedUpdateElements = debounce(100, updateElements)
     window.addEventListener("scroll", delayedUpdateElements)
     window.addEventListener("resize", delayedUpdateElements)
+    window.addEventListener("popstate", updateElements)
     return (): void => {
       window.removeEventListener("scroll", delayedUpdateElements)
       window.removeEventListener("resize", delayedUpdateElements)
+      window.addEventListener("popstate", delayedUpdateElements)
     }
   }, [updateElements])
 
@@ -247,19 +249,19 @@ export interface UpdateHashProps {
   top?: number
 }
 export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => true, top = 0 }) => {
-  const hash = useRef<string>((typeof window !== `undefined` && window.location.hash) || " ")
+  const hash = useRef<string>((typeof window !== "undefined" && window.location.hash) || " ")
 
-  const setHash = useRef((newHash: string) => {
+  const setHash = useCallback((newHash: string) => {
     if (hash.current !== newHash) {
       hash.current = newHash
       window.history.replaceState({}, "", newHash)
     }
-  })
+  }, [])
 
   const { elements } = useElementTracker()
   useEffect(() => {
     if (atTop() && !atBottom()) {
-      setHash.current(" ")
+      setHash(" ")
       return
     }
     const activeHash =
@@ -272,8 +274,8 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
       return
     }
     const id = activeHash.getAttribute("data-et-id") || activeHash.id
-    id && setHash.current(`#${id}`)
-  }, [filter, elements, top])
+    id && setHash(`#${id}`)
+  }, [filter, elements, top, setHash])
 
   useEffect(() => {
     const hashListener = (): void => {
