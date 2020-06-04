@@ -175,9 +175,11 @@ export const ElementTracker: React.FC<ElementTrackerProps> = ({ children }) => {
   useEffect(() => {
     window.addEventListener("scroll", delayedUpdateElements)
     window.addEventListener("resize", delayedUpdateElements)
+    window.addEventListener("hashchange", delayedUpdateElements)
     return (): void => {
       window.removeEventListener("scroll", delayedUpdateElements)
       window.removeEventListener("resize", delayedUpdateElements)
+      window.removeEventListener("hashchange", delayedUpdateElements)
     }
   }, [delayedUpdateElements])
 
@@ -239,7 +241,8 @@ export function active<T extends Element>(elements: Array<T>, windowTop = 0): T 
   }
 
   if (atBottom() && window.location.hash) {
-    const hashedComponent = elements.find(e => e.id && e.id === window.location.hash.substring(1))
+    const lookingFor = window.location.hash.substring(1)
+    const hashedComponent = elements.find(e => e.id === lookingFor || e.getAttribute("data-et-id") === lookingFor)
     if (hashedComponent && hashedComponent.getBoundingClientRect().top >= windowTop) {
       return hashedComponent
     }
@@ -284,6 +287,9 @@ export const UpdateHash: React.FC<UpdateHashProps> = ({ filter = (): boolean => 
   const { elements } = useElementTracker()
 
   useEffect(() => {
+    if (atTop() && atBottom()) {
+      return
+    }
     if (atTop() && !atBottom()) {
       setHash(" ")
       return
