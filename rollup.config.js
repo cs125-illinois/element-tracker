@@ -3,11 +3,11 @@ import typescript from "rollup-plugin-typescript2"
 import resolve from "rollup-plugin-node-resolve"
 import commonJS from "rollup-plugin-commonjs"
 
-export default {
+export default ["cjs", "es"].map(format => ({
   input: "./client/index.tsx",
   output: {
-    format: "cjs",
-    file: "./client/dist/index.cjs.js",
+    format,
+    file: `./client/dist/index.${format}.js`,
     sourcemap: true,
     strict: false,
   },
@@ -22,7 +22,7 @@ export default {
       "process.env.npm_package_version": `"${process.env.npm_package_version}"`,
       "process.env.GIT_COMMIT": `"${process.env.GIT_COMMIT}"`,
     }),
-    resolve({ preferBuiltins: true }),
+    resolve({ browser: true, preferBuiltins: true }),
     commonJS({
       include: "node_modules/**",
       namedExports: {
@@ -30,10 +30,10 @@ export default {
       },
     }),
   ],
-  external: ["react", "prop-types", "crypto"],
+  external: ["react", "prop-types"],
   onwarn: (warning, next) => {
     if (warning.code === "CIRCULAR_DEPENDENCY") return
     if (warning.code === "EVAL") return
     next(warning)
   },
-}
+}))
