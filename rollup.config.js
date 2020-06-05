@@ -2,6 +2,7 @@ import replace from "@rollup/plugin-replace"
 import typescript from "rollup-plugin-typescript2"
 import resolve from "rollup-plugin-node-resolve"
 import commonJS from "rollup-plugin-commonjs"
+import externals from "rollup-plugin-node-externals"
 
 export default ["cjs", "es"].map(format => ({
   input: "./client/index.tsx",
@@ -22,15 +23,10 @@ export default ["cjs", "es"].map(format => ({
       "process.env.npm_package_version": `"${process.env.npm_package_version}"`,
       "process.env.GIT_COMMIT": `"${process.env.GIT_COMMIT}"`,
     }),
+    externals({ deps: true }),
     resolve({ browser: true, preferBuiltins: true }),
-    commonJS({
-      include: "node_modules/**",
-      namedExports: {
-        runtypes: ["Record", "Partial", "Number", "String", "Array", "Static", "Union", "Lazy", "Boolean", "Unknown"],
-      },
-    }),
+    commonJS({ include: "node_modules/**" }),
   ],
-  external: ["react", "prop-types"],
   onwarn: (warning, next) => {
     if (warning.code === "CIRCULAR_DEPENDENCY") return
     if (warning.code === "EVAL") return
