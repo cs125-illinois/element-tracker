@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react"
 
+import { H2, P } from "@cs125/gatsby-theme-cs125/src/material-ui"
+
 import { LoremIpsum as LI } from "lorem-ipsum"
 
 const lorem = new LI()
@@ -16,8 +18,10 @@ const Flasher: React.FC = () => {
   })
   return visible ? (
     <>
-      <h2 id="flasher">Flasher</h2>
-      <p>{content.current}</p>
+      <H2 data-et="true" data-et-id="flasher">
+        Flasher
+      </H2>
+      <P>{content.current}</P>
     </>
   ) : null
 }

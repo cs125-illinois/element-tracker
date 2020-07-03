@@ -17,5 +17,6 @@
     "paths": {
       "@cs125/element-tracker": ["./client/"]
     }
-  }
+  },
+  "exclude": ["example"]
 }

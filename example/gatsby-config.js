@@ -1,18 +1,5 @@
-const path = require("path")
+require("source-map-support").install()
+require("ts-node").register()
+require("tsconfig-paths/register")
 
-module.exports = {
-  pathPrefix: "/element-tracker",
-  plugins: [
-    "@cs125/gatsby-theme-cs125-docs",
-    {
-      resolve: "gatsby-alias-imports",
-      options: {
-        aliases: {
-          react: "./node_modules/react",
-          "@cs125/element-tracker": "..",
-          "@components": "./src/components",
-        },
-      },
-    },
-  ],
-}
+module.exports = require("./gatsby-config.ts")
