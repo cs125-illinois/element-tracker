@@ -1,4 +1,4 @@
-export const pathPrefix = "/react-google-login"
+export const pathPrefix = "/element-tracker"
 
 import { name, description } from "../package.json"
 
