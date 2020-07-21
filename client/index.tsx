@@ -17,9 +17,11 @@ const VERSION = String.check(process.env.npm_package_version)
 const COMMIT = String.check(process.env.GIT_COMMIT)
 
 interface ElementTrackerServerContext {
+  available: boolean
   report: (elements: Element[]) => void
 }
 const ElementTrackerServerContext = createContext<ElementTrackerServerContext>({
+  available: false,
   report: () => {
     throw Error("ElementTrackerServerContext not defined")
   },
@@ -111,7 +113,11 @@ export const ElementTrackerServer: React.FC<ElementTrackerServerProps> = ({
     }),
     [reportInterval]
   )
-  return <ElementTrackerServerContext.Provider value={{ report }}>{children}</ElementTrackerServerContext.Provider>
+  return (
+    <ElementTrackerServerContext.Provider value={{ available: true, report }}>
+      {children}
+    </ElementTrackerServerContext.Provider>
+  )
 }
 ElementTrackerServer.propTypes = {
   server: PropTypes.string,
